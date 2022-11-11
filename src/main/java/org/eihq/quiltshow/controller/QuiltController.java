@@ -63,7 +63,7 @@ public class QuiltController {
 	}
 
 	@PutMapping("/{id}")
-	public ResponseEntity<Quilt> updateClient(@PathVariable Long id, @RequestBody Quilt quilt) {
+	public ResponseEntity<Quilt> updateQuilt(@PathVariable Long id, @RequestBody Quilt quilt) {
 		Quilt currentQuilt = quiltRepository.findById(id).orElseThrow(RuntimeException::new);
 		currentQuilt.setName(quilt.getName());
 		currentQuilt.setDescription(quilt.getDescription());
@@ -79,7 +79,7 @@ public class QuiltController {
 	}
 
 	@DeleteMapping("/{id}")
-	public ResponseEntity<?> deleteClient(@PathVariable Long id) {
+	public ResponseEntity<?> deleteQuilt(@PathVariable Long id) {
 		quiltRepository.deleteById(id);
 		return ResponseEntity.ok().build();
 	}
