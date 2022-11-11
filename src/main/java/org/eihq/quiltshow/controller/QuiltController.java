@@ -59,7 +59,7 @@ public class QuiltController {
 	@PostMapping
 	public ResponseEntity<Quilt> createQuilt(@RequestBody Quilt quilt) throws URISyntaxException {
 		Quilt newQuilt = quiltRepository.save(quilt);
-		return ResponseEntity.created(new URI("/quilts/%d".formatted(newQuilt.getId()))).body(newQuilt);
+		return ResponseEntity.created(new URI(String.format("/quilts/%d", newQuilt.getId()))).body(newQuilt);
 	}
 
 	@PutMapping("/{id}")

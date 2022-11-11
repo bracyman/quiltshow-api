@@ -39,6 +39,6 @@ public class Person {
 	private List<Quilt> quilted;
 
 	public String getFullName() {
-		return "%s %s".formatted(getFirstName(), getLastName());
+		return String.format("%s %s", getFirstName(), getLastName());
 	}
 }

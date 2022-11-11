@@ -39,7 +39,7 @@ public class TagController implements InitializingBean {
     @PostMapping
     public ResponseEntity<Tag> createTag(@RequestBody Tag tag) throws URISyntaxException {
         Tag newTag = tagRepository.save(tag);
-        return ResponseEntity.created(new URI("/tags/%s".formatted(newTag.getName()))).body(newTag);
+        return ResponseEntity.created(new URI(String.format("/tags/%s", newTag.getName()))).body(newTag);
     }
     
     @PutMapping("/{name}")

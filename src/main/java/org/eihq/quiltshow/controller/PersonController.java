@@ -36,7 +36,7 @@ public class PersonController {
     @PostMapping
     public ResponseEntity<Person> createPerson(@RequestBody Person person) throws URISyntaxException {
         Person newPerson = personRepository.save(person);
-        return ResponseEntity.created(new URI("/persons/%d".formatted(newPerson.getId()))).body(newPerson);
+        return ResponseEntity.created(new URI(String.format("/persons/%d", newPerson.getId()))).body(newPerson);
     }
     
     @PutMapping("/{id}")
