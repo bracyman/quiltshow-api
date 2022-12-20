@@ -1,7 +1,11 @@
 package org.eihq.quiltshow.model;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import javax.persistence.CascadeType;
 import javax.persistence.Entity;
@@ -12,6 +16,8 @@ import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -20,8 +26,8 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 public class Quilt {
-    
-    @Id
+ 
+	@Id
     @GeneratedValue
     private Long id;
 
@@ -35,15 +41,23 @@ public class Quilt {
     )
     private List<Tag> tags = new ArrayList<>();
 
-    private int length;
-    private int width;
+    private Integer length;
+    private Integer width;
+    private Boolean judged;
 
-    @ManyToOne
-    private Person piecedBy;
+    private QuiltEffort effort;
     
-    @ManyToOne(optional = true)
-    private Person quiltedBy;
-
+    @JsonBackReference
+    @ManyToOne
+    private Person enteredBy;
+   
+    private String additionalQuilters;
+    
+    private LocalDateTime submittedOn = LocalDateTime.now();
+    
+    private LocalDateTime lastUpdatedOn = LocalDateTime.now();
+    
+    
 
     /**
      * Calculates the surface area of the quilt
@@ -51,5 +65,16 @@ public class Quilt {
      */
     public int area() {
         return length * width;
+    }
+    
+    /**
+     * Returns additionalQuilters as a list of quilter names 
+     */
+    public List<String> getAdditionalQuilters() {
+    	return (additionalQuilters == null) ? Collections.emptyList() : Arrays.asList(additionalQuilters.split(","));
+    }
+    
+    public void setAdditionalQuilters(List<String> additionalQuilters) {
+    	this.additionalQuilters = additionalQuilters.stream().collect(Collectors.joining(","));
     }
 }
