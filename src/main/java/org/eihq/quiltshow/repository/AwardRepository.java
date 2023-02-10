@@ -1,8 +1,8 @@
 package org.eihq.quiltshow.repository;
 
-import org.eihq.quiltshow.model.Tag;
+import org.eihq.quiltshow.model.Award;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface TagRepository extends JpaRepository<Tag, Long> {
+public interface AwardRepository extends JpaRepository<Award, Long> {
     
 }

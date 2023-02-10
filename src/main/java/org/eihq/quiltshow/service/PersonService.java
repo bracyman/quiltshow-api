@@ -15,18 +15,10 @@ public class PersonService {
 	PersonRepository personRepository;
 	
 	
-	public List<Person> getpersons() {
-		return personRepository.findByIsUser(true);
-	}
-	
 	public List<Person> getPersons() {
 		return personRepository.findAll();
 	}
-	
-	public List<Person> getNonUserPersons() {
-		return personRepository.findByIsUser(false);
-	}
-	
+		
 	public Person getPerson(Long id) {
 		Optional<Person> person = personRepository.findById(id);
 		
@@ -38,7 +30,7 @@ public class PersonService {
 	}
 	
 	public Person getUser(String email) {
-		List<Person> persons = personRepository.findByEmail(email);
+		List<Person> persons = personRepository.findByEmailIgnoreCase(email);
 		
 		if(!persons.isEmpty()) {
 			return persons.get(0);

@@ -12,7 +12,6 @@ import javax.persistence.OneToMany;
 import javax.persistence.Table;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -27,7 +26,6 @@ public class Person {
 	@GeneratedValue
 	private Long id;
 
-	private boolean isUser;
 	private String email;
 
 	@JsonIgnore
@@ -38,8 +36,15 @@ public class Person {
 
 	private String firstName;
 	private String lastName;
+	
+	private String address1;
+	private String address2;
+	private String city;
+	private String state;
+	private String zip;
+	private String phone;
 
-	@JsonManagedReference
+	@JsonIgnore
 	@OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, mappedBy = "enteredBy")
 	private List<Quilt> entered = new ArrayList<>();
 

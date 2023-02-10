@@ -8,6 +8,7 @@ import java.util.List;
 import org.eihq.quiltshow.model.Person;
 import org.eihq.quiltshow.model.Quilt;
 import org.eihq.quiltshow.repository.QuiltRepository;
+import org.eihq.quiltshow.repository.QuiltSearch;
 import org.eihq.quiltshow.service.PersonService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -55,6 +56,11 @@ public class QuiltController {
 		return quiltRepository.findAll();
 	}	
 
+	@PostMapping("/search")
+	public List<Quilt> searchQuilts(@RequestBody QuiltSearch search) {
+		return quiltRepository.findAll(search.buildSearch());
+	}	
+
 	@GetMapping("/user/{userId}")
 	public List<Quilt> getQuiltsForPerson(@PathVariable Long userId) {
 		Person p = personService.getPerson(userId);
@@ -99,18 +105,9 @@ public class QuiltController {
 	public ResponseEntity<Quilt> updateQuilt(@PathVariable Long id, @RequestBody Quilt quilt) {
 		Quilt currentQuilt = quiltRepository.findById(id).orElseThrow(RuntimeException::new);
 		
-		if(quilt.getName() != null) currentQuilt.setName(quilt.getName()); 
-		if(quilt.getDescription() != null) currentQuilt.setDescription(quilt.getDescription());
-		if(quilt.getLength() != null) currentQuilt.setLength(quilt.getLength());
-		if(quilt.getWidth() != null) currentQuilt.setWidth(quilt.getWidth());
-		if(quilt.getEffort() != null) currentQuilt.setEffort(quilt.getEffort());
-		if(quilt.getJudged() != null) currentQuilt.setJudged(quilt.getJudged());
-		if(quilt.getAdditionalQuilters() != null) currentQuilt.setAdditionalQuilters(quilt.getAdditionalQuilters());
-		if(quilt.getTags() != null) currentQuilt.setTags(quilt.getTags());
+		Quilt updatedQuilt = quiltRepository.save(quilt);
 
-		currentQuilt = quiltRepository.save(currentQuilt);
-
-		return ResponseEntity.ok(currentQuilt);
+		return ResponseEntity.ok(updatedQuilt);
 	}
 
 	@DeleteMapping("/{id}")

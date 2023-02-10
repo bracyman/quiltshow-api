@@ -46,7 +46,9 @@ public class AuthController {
 	public boolean verify(@PathVariable String email) {
 		log.debug("Verifying user {}", email);
 
-		return null != personService.getUser(email);
+		boolean exists = null != personService.getUser(email);
+		
+		return exists;
 	}
 
 	@PostMapping("/register")
@@ -57,12 +59,12 @@ public class AuthController {
 		authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
 		
 		// add default password
-		userData.setPassword("password");
-		userData.setUser(true);
-		
+		userData.setPassword("password");		
+		String encodedPassword = passwordEncoder.encode(userData.getPassword());
+		userData.setPassword(encodedPassword);		
 		Person newUser = personService.save(userData);
 		org.springframework.security.core.userdetails.User userDetails 
-			= new org.springframework.security.core.userdetails.User(newUser.getEmail(), passwordEncoder.encode(newUser.getPassword()), authorities);
+			= new org.springframework.security.core.userdetails.User(newUser.getEmail(), newUser.getPassword(), authorities);
 		Authentication authentication = new UsernamePasswordAuthenticationToken(userDetails, null, authorities);
 		SecurityContextHolder.getContext().setAuthentication(authentication);
 		

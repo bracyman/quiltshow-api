@@ -27,7 +27,7 @@ public class JpaUserDetailsService implements UserDetailsService, InitializingBe
 	
 	@Override
 	public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-		List<Person> users = personRepository.findByEmail(username);
+		List<Person> users = personRepository.findByEmailIgnoreCase(username);
 		
 		if(users.isEmpty()) {
 			throw new UsernameNotFoundException(String.format("No user found with email address %s", username));
@@ -68,6 +68,10 @@ public class JpaUserDetailsService implements UserDetailsService, InitializingBe
 		public Collection<? extends GrantedAuthority> getAuthorities() {
 			List<GrantedAuthority> authorities = new ArrayList<GrantedAuthority>();
 			authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
+			
+			if(user.getEmail().equals("admin")) {
+				authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
+			}
 			
 			return authorities;
 		}
