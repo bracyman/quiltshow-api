@@ -7,8 +7,9 @@ import java.util.List;
 
 import org.eihq.quiltshow.model.Person;
 import org.eihq.quiltshow.model.Quilt;
+import org.eihq.quiltshow.model.QuiltSearch;
 import org.eihq.quiltshow.repository.QuiltRepository;
-import org.eihq.quiltshow.repository.QuiltSearch;
+import org.eihq.quiltshow.repository.QuiltSearchBuilder;
 import org.eihq.quiltshow.service.PersonService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -33,6 +34,10 @@ public class QuiltController {
 
 	@Autowired
 	private PersonService personService;
+	
+	
+	@Autowired
+	QuiltSearchBuilder quiltSearchBuilder;
 
 	@GetMapping
 	public List<Quilt> getQuilts(Authentication auth) {
@@ -58,7 +63,7 @@ public class QuiltController {
 
 	@PostMapping("/search")
 	public List<Quilt> searchQuilts(@RequestBody QuiltSearch search) {
-		return quiltRepository.findAll(search.buildSearch());
+		return quiltSearchBuilder.buildSearch(search).getResultList();
 	}	
 
 	@GetMapping("/user/{userId}")
