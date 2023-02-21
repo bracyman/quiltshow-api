@@ -4,6 +4,7 @@ import java.util.Calendar;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Random;
 import java.util.Set;
 
 import org.eihq.quiltshow.configuration.UserRoles;
@@ -492,8 +493,8 @@ public class ShowController implements InitializingBean {
 		Quilt quilt = new Quilt();
 		quilt.setName("nombre");
 		quilt.setDescription("description");
-		quilt.setWidth(45);
-		quilt.setLength(54);
+		quilt.setWidth(45.0);
+		quilt.setLength(54.0);
 		quilt.setGroupSize(GroupSize.SOLO);
 		quilt.setJudged(true);
 		quilt.setCategory(show.getCategories().iterator().next());
@@ -505,6 +506,27 @@ public class ShowController implements InitializingBean {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-	}
+		
+		
+		Random r = new Random();
+		for(int i=0; i < 10; i++) {
+			Quilt q = new Quilt();
+			q.setName("Quilt %d".formatted(i));
+			q.setDescription("This is quilt number %d".formatted(i));
+			q.setWidth(i * 100 * r.nextDouble());
+			q.setLength(i * 100 * r.nextDouble());
+			q.setGroupSize(GroupSize.values()[i % GroupSize.values().length]);
+			q.setJudged(i % 3 == 0);
+			q.setCategory(show.getCategories().stream().skip(i % show.getCategories().size()).findFirst().get());
+			q.getTags().addAll(show.getTagCategories().stream().skip(i % show.getTagCategories().size()).findFirst().get().getTags());
+			
+			try {
+				showService.addQuilt(show.getId(), q);
+			} catch (NoActiveShowException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+	}	
 
 }

@@ -22,7 +22,10 @@ import javax.persistence.ManyToOne;
 import javax.persistence.OneToOne;
 import javax.persistence.Table;
 
+import org.hibernate.annotations.GenericGenerator;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIncludeProperties;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -38,6 +41,11 @@ public class Quilt {
 	@Id
     @GeneratedValue
     private Long id;
+
+    @GeneratedValue(generator = "quilt-number-generator")
+    @GenericGenerator(name = "quilt-number-generator",
+    	strategy = "org.eihq.quiltshow.repository.QuiltNumberGenerator")
+    private Integer number;
 
 	@JsonIgnore
     @ManyToOne
@@ -62,10 +70,11 @@ public class Quilt {
     		inverseJoinColumns = @JoinColumn(name = "tag_id"))
     @EqualsAndHashCode.Exclude
 	@ToString.Exclude
+	@JsonIncludeProperties({"id","name","description"})
 	private List<Tag> tags = new ArrayList<>();
 
-    private Integer length;
-    private Integer width;
+    private Double length;
+    private Double width;
     private Boolean firstShow;
     private Boolean judged;
 
@@ -106,7 +115,7 @@ public class Quilt {
      * Calculates the surface area of the quilt
      * @return
      */
-    public int area() {
+    public double area() {
         return length * width;
     }
     
