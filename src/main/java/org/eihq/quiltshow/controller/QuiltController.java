@@ -7,7 +7,6 @@ import java.util.List;
 
 import org.eihq.quiltshow.model.Person;
 import org.eihq.quiltshow.model.Quilt;
-import org.eihq.quiltshow.model.QuiltSearch;
 import org.eihq.quiltshow.repository.QuiltRepository;
 import org.eihq.quiltshow.repository.QuiltSearchBuilder;
 import org.eihq.quiltshow.service.PersonService;
@@ -61,9 +60,9 @@ public class QuiltController {
 		return quiltRepository.findAll();
 	}	
 
-	@PostMapping("/search")
-	public List<Quilt> searchQuilts(@RequestBody QuiltSearch search) {
-		return quiltSearchBuilder.buildSearch(search).getResultList();
+	@PostMapping("/search/{searchText}")
+	public List<Quilt> searchQuilts(@RequestBody String searchText) {
+		return quiltSearchBuilder.buildBasicSearch(searchText).getResultList();
 	}	
 
 	@GetMapping("/user/{userId}")

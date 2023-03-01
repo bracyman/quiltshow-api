@@ -1,15 +1,22 @@
 package org.eihq.quiltshow.model;
 
+import java.io.Serializable;
 import java.util.List;
 import java.util.stream.Stream;
 
 import org.springframework.util.StringUtils;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import lombok.AllArgsConstructor;
 import lombok.Data;
 
 @Data
-public class SearchField {
+@AllArgsConstructor
+public class SearchField implements Serializable {
 	
+	private static final long serialVersionUID = 1L;
+
 	public enum MatchType {		
 		CONTAINS("contains"),
 		EQUALS("equals"),
@@ -39,10 +46,12 @@ public class SearchField {
 	MatchType matchType;
 
 	
+	@JsonIgnore
 	public boolean isEmpty() {
 		return !StringUtils.hasText(getMatches());
 	}
 	
+	@JsonIgnore
 	public Integer getMatchesInt() {
 		if(getMatches() == null) {
 			return null;
@@ -50,6 +59,7 @@ public class SearchField {
 		return Integer.valueOf(getMatches());
 	}
 	
+	@JsonIgnore
 	public Double getMatchesNumber() {
 		if(getMatches() == null) {
 			return null;
@@ -57,6 +67,7 @@ public class SearchField {
 		return Double.valueOf(getMatches());
 	}
 	
+	@JsonIgnore
 	public Boolean getMatchesBoolean() {
 		if(getMatches() == null) {
 			return null;
@@ -64,6 +75,7 @@ public class SearchField {
 		return "true".equalsIgnoreCase(getMatches());
 	}
 	
+	@JsonIgnore
 	public Double getMatchesRangeMin() {
 		if(getMatches() == null) {
 			return null;
@@ -74,6 +86,7 @@ public class SearchField {
 		return Math.min(first, last);
 	}
 	
+	@JsonIgnore
 	public Double getMatchesRangeMax() {
 		if(getMatches() == null) {
 			return null;
@@ -84,6 +97,7 @@ public class SearchField {
 		return Math.max(first, last);
 	}
 	
+	@JsonIgnore
 	public List<String> getMatchesStringList() {
 		if(getMatches() == null) {
 			return null;
@@ -91,6 +105,7 @@ public class SearchField {
 		return List.of(getMatches().split(","));
 	}
 	
+	@JsonIgnore
 	public List<Integer> getMatchesIntegerList() {
 		if(getMatches() == null) {
 			return null;
@@ -98,6 +113,7 @@ public class SearchField {
 		return Stream.of(getMatches().split(",")).map(m -> Integer.valueOf(m)).toList();
 	}	
 	
+	@JsonIgnore
 	public List<Long> getMatchesLongList() {
 		if(getMatches() == null) {
 			return null;

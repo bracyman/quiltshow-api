@@ -23,6 +23,7 @@ import org.eihq.quiltshow.service.ShowService;
 import org.eihq.quiltshow.service.UserAuthentication;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -43,6 +44,9 @@ public class ShowController implements InitializingBean {
 
 	@Autowired
 	UserAuthentication userAuthentication;
+	
+	@Value("${application.environment:dev}")
+	String environment;
 
 	@GetMapping("/")
 	public ResponseEntity<List<ShowSummary>> getShows() {
@@ -312,17 +316,19 @@ public class ShowController implements InitializingBean {
 
 	@Override
 	public void afterPropertiesSet() throws Exception {
-		createDefaultShow();
-
-		createDefaultCategories();
-		
-		createDefaultTagCategories();
-		
-		createDefaultTags();
-
-		createDefaultAwards();
-		
-		createDefaultQuilt();
+		if("local-only".equalsIgnoreCase(environment)) {
+			createDefaultShow();
+	
+			createDefaultCategories();
+			
+			createDefaultTagCategories();
+			
+			createDefaultTags();
+	
+			createDefaultAwards();
+			
+			createDefaultQuilt();
+		}
 	}
 
 	private void createDefaultShow() {

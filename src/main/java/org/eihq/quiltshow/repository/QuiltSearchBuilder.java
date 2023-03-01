@@ -23,7 +23,7 @@ import org.eihq.quiltshow.model.Category;
 import org.eihq.quiltshow.model.GroupSize;
 import org.eihq.quiltshow.model.Person;
 import org.eihq.quiltshow.model.Quilt;
-import org.eihq.quiltshow.model.QuiltSearch;
+import org.eihq.quiltshow.model.Report;
 import org.eihq.quiltshow.model.SearchField;
 import org.eihq.quiltshow.model.SearchField.MatchType;
 import org.eihq.quiltshow.model.Tag;
@@ -40,11 +40,39 @@ public class QuiltSearchBuilder {
 	@PersistenceContext
 	private EntityManager entityManager;
 
-	public TypedQuery<Quilt> buildSearch(QuiltSearch search) {
 
-		//				private SearchField enteredBy = null;
-		//
-		//				private SearchField groupSize = null;
+	/**
+	 * A basic text search, matches the provided text against
+	 *   - quilt name
+	 *   - description
+	 *   - enteredBy name
+	 *   - additional quilters
+	 * @param searchText
+	 * @return
+	 */
+	public TypedQuery<Quilt> buildBasicSearch(String searchText) {
+		CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+		CriteriaQuery<Quilt> query = cb.createQuery(Quilt.class);
+		Root<Quilt> quiltRoot = query.from(Quilt.class);
+
+		List<Predicate> predicates = new ArrayList<>();
+		addPredicate(predicates, fieldMatchesString(cb, quiltRoot.get("name"), new SearchField(searchText, MatchType.CONTAINS)));
+		addPredicate(predicates, fieldMatchesString(cb, quiltRoot.get("description"), new SearchField(searchText, MatchType.CONTAINS)));
+		addPredicate(predicates, fieldMatchesPerson(cb, quiltRoot.get("enteredBy"), new SearchField(searchText, MatchType.CONTAINS)));
+		addPredicate(predicates, fieldMatchesString(cb, quiltRoot.get("additionalQuilters"), new SearchField(searchText, MatchType.CONTAINS)));
+
+		query
+			.select(quiltRoot)
+			.where(cb.or(predicates.toArray(new Predicate[predicates.size()])));
+		
+		query.orderBy(List.of("enteredBy", "name", "description", "additionalQuilters").stream().map(o -> sortField(cb, quiltRoot, o)).toList());
+	
+		return entityManager.createQuery(query);
+	}
+
+	
+	public TypedQuery<Quilt> buildSearch(Report report) {
+
 		
 		// 		addPredicate(predicates, fieldMatchesString(cb, quiltRoot.get("designSourceTypes"), search.getDesignSourceTypes()));
 		//		addPredicate(predicates, fieldMatchesString(cb, quiltRoot.get("designSourceName"), search.getDesignSourceName()));
@@ -54,26 +82,26 @@ public class QuiltSearchBuilder {
 		Root<Quilt> quiltRoot = query.from(Quilt.class);
 
 		List<Predicate> predicates = new ArrayList<>();
-		addPredicate(predicates, fieldMatchesString(cb, quiltRoot.get("name"), search.getName()));
-		addPredicate(predicates, fieldMatchesNumber(cb, quiltRoot.get("number"), search.getNumber()));
-		addPredicate(predicates, fieldMatchesString(cb, quiltRoot.get("description"), search.getDescription()));
-		addPredicate(predicates, fieldMatchesNumber(cb, quiltRoot.get("length"), search.getLength()));
-		addPredicate(predicates, fieldMatchesNumber(cb, quiltRoot.get("width"), search.getWidth()));
-		addPredicate(predicates, fieldMatchesBoolean(cb, quiltRoot.get("judged"), search.getJudged()));
-		addPredicate(predicates, fieldMatchesBoolean(cb, quiltRoot.get("firstShow"), search.getFirstShow()));
-		addPredicate(predicates, fieldMatchesString(cb, quiltRoot.get("mainColor"), search.getMainColor()));
-		addPredicate(predicates, fieldMatchesNumber(cb, quiltRoot.get("hangingPreference"), search.getHangingPreference()));
-		addPredicate(predicates, fieldMatchesString(cb, quiltRoot.get("mainColor"), search.getMainColor()));
-		addPredicate(predicates, fieldMatchesString(cb, quiltRoot.get("additionalQuilters"), search.getAdditionalQuilters()));
-		addPredicate(predicates, fieldMatchesCategories(cb, quiltRoot.get("category"), search.getCategory()));
-		addPredicate(predicates, fieldMatchesTags(query, quiltRoot, cb, quiltRoot.get("tags"), search.getTags()));
-		addPredicate(predicates, fieldMatchesGroupSize(cb, quiltRoot.get("groupSize"), search.getGroupSize()));
+		addPredicate(predicates, fieldMatchesString(cb, quiltRoot.get("name"), report.getName()));
+		addPredicate(predicates, fieldMatchesNumber(cb, quiltRoot.get("number"), report.getNumber()));
+		addPredicate(predicates, fieldMatchesString(cb, quiltRoot.get("description"), report.getDescription()));
+		addPredicate(predicates, fieldMatchesNumber(cb, quiltRoot.get("length"), report.getLength()));
+		addPredicate(predicates, fieldMatchesNumber(cb, quiltRoot.get("width"), report.getWidth()));
+		addPredicate(predicates, fieldMatchesBoolean(cb, quiltRoot.get("judged"), report.getJudged()));
+		addPredicate(predicates, fieldMatchesBoolean(cb, quiltRoot.get("firstShow"), report.getFirstShow()));
+		addPredicate(predicates, fieldMatchesString(cb, quiltRoot.get("mainColor"), report.getMainColor()));
+		addPredicate(predicates, fieldMatchesNumber(cb, quiltRoot.get("hangingPreference"), report.getHangingPreference()));
+		addPredicate(predicates, fieldMatchesString(cb, quiltRoot.get("mainColor"), report.getMainColor()));
+		addPredicate(predicates, fieldMatchesString(cb, quiltRoot.get("additionalQuilters"), report.getAdditionalQuilters()));
+		addPredicate(predicates, fieldMatchesCategories(cb, quiltRoot.get("category"), report.getCategory()));
+		addPredicate(predicates, fieldMatchesTags(query, quiltRoot, cb, quiltRoot.get("tags"), report.getTags()));
+		addPredicate(predicates, fieldMatchesGroupSize(cb, quiltRoot.get("groupSize"), report.getGroupSize()));
 		
 		query
 			.select(quiltRoot)
 			.where(cb.and(predicates.toArray(new Predicate[predicates.size()])));
 		
-		query.orderBy(search.getOrder().stream().map(o -> sortField(cb, quiltRoot, o)).toList());
+		query.orderBy(report.getSortOrder().stream().map(o -> sortField(cb, quiltRoot, o)).toList());
 
 		return entityManager.createQuery(query);
 	}
@@ -151,6 +179,20 @@ public class QuiltSearchBuilder {
 		}
 		else {
 			return cb.equal(field, filter.getMatchesNumber());
+		}
+	}
+
+
+	private Predicate fieldMatchesPerson(CriteriaBuilder cb, Path<Person> field, SearchField filter) {
+		if(filter == null || filter.isEmpty()) {
+			return null;
+		}
+
+		if(filter.getMatchType() == MatchType.EQUALS) {
+			return cb.equal(cb.concat(cb.concat(field.get("firstName"), " "), field.get("lastName")), filter.getMatches());
+		}
+		else {
+			return cb.or(fieldMatchesString(cb, field.get("firstName"), filter), fieldMatchesString(cb, field.get("lastName"), filter));
 		}
 	}
 
