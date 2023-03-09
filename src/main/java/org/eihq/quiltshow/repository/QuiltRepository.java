@@ -24,4 +24,7 @@ public interface QuiltRepository extends JpaRepository<Quilt, Long>, JpaSpecific
     @Modifying
     @Query("DELETE FROM Quilt q WHERE q.id = :id")
     void deleteById(@Param("id") Long id);
+    
+    @Query(value = "SELECT max(number) FROM Quilt")
+    Integer getMaxQuiltNumber();
 }

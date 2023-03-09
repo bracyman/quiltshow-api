@@ -330,9 +330,9 @@ public class ShowController implements InitializingBean {
 			
 			createDefaultTags();
 	
-			createDefaultAwards();
+//			createDefaultAwards();
 			
-			//createDefaultQuilt();
+//			createDefaultQuilt();
 		}
 	}
 
