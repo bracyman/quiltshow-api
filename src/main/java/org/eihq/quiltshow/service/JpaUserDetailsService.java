@@ -2,6 +2,7 @@ package org.eihq.quiltshow.service;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 import org.eihq.quiltshow.model.Person;
@@ -17,7 +18,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
-public class JpaUserDetailsService implements UserDetailsService, InitializingBean {
+public class JpaUserDetailsService implements UserDetailsService {
 	
 	@Autowired
 	PersonRepository personRepository;
@@ -36,17 +37,6 @@ public class JpaUserDetailsService implements UserDetailsService, InitializingBe
 		UserDetails userDetails = new ShowUserDetails(users.get(0));
 		return userDetails;
 	}	
-
-	// create the admin account
-	@Override
-	public void afterPropertiesSet() throws Exception {
-		Person admin = new Person();
-		admin.setEmail("admin");
-		admin.setFirstName("admin");
-		admin.setLastName(" ");
-		admin.setPassword(passwordEncoder.encode("admin"));
-		personRepository.save(admin);
-	}
 	
 	
 	class ShowUserDetails implements UserDetails {
@@ -66,14 +56,11 @@ public class JpaUserDetailsService implements UserDetailsService, InitializingBe
 
 		@Override
 		public Collection<? extends GrantedAuthority> getAuthorities() {
-			List<GrantedAuthority> authorities = new ArrayList<GrantedAuthority>();
-			authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
-			
-			if(user.getEmail().equals("admin")) {
-				authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
+			if(user == null) {
+				return Collections.emptyList();
 			}
 			
-			return authorities;
+			return user.getRoles().stream().map(r -> r.getAuthority()).toList();
 		}
 
 		@Override

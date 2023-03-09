@@ -72,6 +72,9 @@ public class Quilt {
 	@ToString.Exclude
 	@JsonIncludeProperties({"id","name","description"})
 	private List<Tag> tags = new ArrayList<>();
+    
+    private Boolean presidentsChallenge;
+    private Boolean firstEntry;
 
     private Double length;
     private Double width;
@@ -109,6 +112,11 @@ public class Quilt {
     @EqualsAndHashCode.Exclude
 	@ToString.Exclude
     private Set<Award> awards = new HashSet<>();    
+    
+    @ManyToOne
+    @EqualsAndHashCode.Exclude
+	@ToString.Exclude
+    private PaymentData paymentData;
     
 
     /**

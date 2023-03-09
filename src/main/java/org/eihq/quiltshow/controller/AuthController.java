@@ -6,10 +6,15 @@ import java.util.List;
 
 import javax.security.auth.login.AccountNotFoundException;
 
+import org.eihq.quiltshow.configuration.UserRoles;
 import org.eihq.quiltshow.model.Person;
 import org.eihq.quiltshow.service.PersonService;
+import org.eihq.quiltshow.service.ShowService;
 import org.eihq.quiltshow.service.TokenService;
+import org.eihq.quiltshow.service.UserAuthentication;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -31,7 +36,11 @@ import lombok.extern.slf4j.Slf4j;
 @CrossOrigin
 @RestController
 @Slf4j
-public class AuthController {
+public class AuthController implements InitializingBean {
+
+	@Value("${application.environment:dev}")
+	String environment;
+
 
 	@Autowired
 	TokenService tokenService;
@@ -55,11 +64,10 @@ public class AuthController {
 	public TokenResponse register(@RequestBody Person userData) throws URISyntaxException {
 		log.debug("Registering user {}", userData.getEmail());
 
-		List<GrantedAuthority> authorities = new ArrayList<GrantedAuthority>();
-		authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
+		List<GrantedAuthority> authorities = userData.getRoles().stream().map(r -> r.getAuthority()).toList();
 		
 		// add default password
-		userData.setPassword("password");		
+		userData.setPassword(userData.getPassword() == null ? "password" : userData.getPassword());	
 		String encodedPassword = passwordEncoder.encode(userData.getPassword());
 		userData.setPassword(encodedPassword);		
 		Person newUser = personService.save(userData);
@@ -96,4 +104,39 @@ public class AuthController {
 		Person user;
 		String accessToken;
 	}
+	
+	@Override
+	public void afterPropertiesSet() throws Exception {
+		if("local-only".equalsIgnoreCase(environment)) {
+			createDefaultUsers();
+		}
+	}
+	
+	private void createDefaultUsers() {
+		Person admin = new Person();
+		admin.setEmail("admin");
+		admin.setPassword("admin");
+		admin.setFirstName("Show");
+		admin.setLastName("Admin");
+		admin.addRole(UserRoles.ROLE_ADMIN);
+		
+		Person user = new Person();
+		user.setEmail("user");
+		user.setFirstName("Show");
+		user.setLastName("User");
+		user.setAddress1("123 Fake St");
+		user.setCity("Dreams");
+		user.setState("IA");
+		user.setPhone("(123)456-7890");
+		user.setZip("52333");
+		
+		try {
+			register(admin);
+			register(user);
+		}
+		catch(URISyntaxException e) {
+			log.error("Error while creating admin user", e);
+		}
+	}
+
 }

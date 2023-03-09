@@ -38,6 +38,8 @@ public class Category {
 
 	@Column(length=5000)
 	private String description;
+	
+	int displayOrder;
 
 	@JsonIgnore
 	@ManyToOne
@@ -50,6 +52,8 @@ public class Category {
 	@EqualsAndHashCode.Exclude
 	@ToString.Exclude
 	Set<Quilt> quilts = new HashSet<>();
+	
+	private Boolean judgeable = Boolean.TRUE;
 	
 	
 	public String getShortDescription() {

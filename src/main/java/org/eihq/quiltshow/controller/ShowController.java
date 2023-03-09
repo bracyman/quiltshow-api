@@ -15,10 +15,12 @@ import org.eihq.quiltshow.exception.NotFoundException;
 import org.eihq.quiltshow.model.Award;
 import org.eihq.quiltshow.model.Category;
 import org.eihq.quiltshow.model.GroupSize;
+import org.eihq.quiltshow.model.Person;
 import org.eihq.quiltshow.model.Quilt;
 import org.eihq.quiltshow.model.Show;
 import org.eihq.quiltshow.model.Tag;
 import org.eihq.quiltshow.model.TagCategory;
+import org.eihq.quiltshow.service.PersonService;
 import org.eihq.quiltshow.service.ShowService;
 import org.eihq.quiltshow.service.UserAuthentication;
 import org.springframework.beans.factory.InitializingBean;
@@ -41,6 +43,9 @@ public class ShowController implements InitializingBean {
 
 	@Autowired
 	ShowService showService;
+	
+	@Autowired
+	private PersonService personService;
 
 	@Autowired
 	UserAuthentication userAuthentication;
@@ -327,7 +332,7 @@ public class ShowController implements InitializingBean {
 	
 			createDefaultAwards();
 			
-			createDefaultQuilt();
+			//createDefaultQuilt();
 		}
 	}
 
@@ -352,53 +357,76 @@ public class ShowController implements InitializingBean {
 		try {
 			Long showId = showService.getActiveShow().getId();
 			Category c = new Category();
-
-			c.setName("Applique");c.setDescription("A quilt with applique as primary technique.  Applique may be sewn down with any method, but not may be only fused on.  Any size.");
-			c.setShortDescription("A quilt with applique as primary technique");
+			int order = 0;
+			
+			c.setName("Art - Abstract");c.setDescription("a non-identifiable subject that stresses mostly color, line, and shape");
+			c.setShortDescription("a non-identifiable subject");
+			c.setDisplayOrder(order++);
 			showService.createCategory(showId, c);
 
-			c.setName("Art/Innovative Quilt");c.setDescription("A work of original design reflecting innovative construction and design techniques, themes, or subject matter. Category includes:\n"
-					+ "<ul>"
-					+ "<li>Abstract composition - a non-identifiable subject that stresses mostly color, line, and shape.</li>"
-					+ "<li>Naturescape - a quilt that reflects the scenery found in nature, such as land, mountains, forests, gardens, and deserts.  Animals and humans may be included but should not be the main focus of the piece.</li>"
-					+ "<li>Pictorial - a quilt that represents a recognizable image of a person, place, or thing.</li></ul>");
-			c.setShortDescription("A work reflecting innovative techniques");
+			c.setName("Art - Naturescape");c.setDescription("a quilt that reflects the scenery found in nature, such as land, mountains, forests, gardens, and deserts.  Animals and humans may be included but should not be the main focus of the piece");
+			c.setShortDescription("scenery found in nature");
+			c.setDisplayOrder(order++);
 			showService.createCategory(showId, c);
 
-			c.setName("Kits including Block of the Month and Row by Row");c.setDescription("This category includes all quilts made from any combination of units (patterns, fabrics, etc.) that were pre-selected by someone other than the quiltmaker.  Any technique, any size.");
-			c.setShortDescription("A quilt made from a kit");
-			showService.createCategory(showId, c);
-
-			c.setName("Juniors");c.setDescription("Any quilter who is under age 18 as of July 21, 2023.  The Junior Quilter must have constructed the quilt themselves with only direction from an adult.  Quilting may have been completed by someone other than the Junior Quilter.");
-			c.setShortDescription("Any quilter who is under age 18");
+			c.setName("Art - Pictorial");c.setDescription("a quilt that represents a recognizable image of a person, place, or thing");
+			c.setShortDescription("an image of a person, place, or thing");
+			c.setDisplayOrder(order++);
 			showService.createCategory(showId, c);
 
 			c.setName("Clothing/ Accessories");c.setDescription("Bags, clothing, pillows, dolls, mug rugs, candle mats, etc.");
 			c.setShortDescription("Bags, clothing, pillows, dolls, mug rugs, etc");
+			c.setDisplayOrder(order++);
 			showService.createCategory(showId, c);
 
 			c.setName("Modern");c.setDescription("A modern quilt is defined as one that includes any of the following: minimalism, asymmetry, expansive negative space, bold colors, high contrast, improvisational piecing, grid or straight line quilting.  Any size.");
 			c.setShortDescription("A quilt using modern design techniques");
-			showService.createCategory(showId, c);
-
-			c.setName("Scrap Quilts");c.setDescription("Quilt top must incorporate at least 50 different fabrics.  Any technique, any size.");
-			c.setShortDescription("Top incorporates at least 50 different fabrics");
-			showService.createCategory(showId, c);
-
-			c.setName("Seasonal Quilts");c.setDescription("Any quilt reflecting traditional holiday or seasonal motifs.  Examples include Christmas, Halloween, fall, winter, spring or summer themes, Easter, 4th of July, Valentine’s Day, etc.");
-			c.setShortDescription("Any quilt reflecting holiday or seasonal motifs");
+			c.setDisplayOrder(order++);
 			showService.createCategory(showId, c);
 
 			c.setName("Special Techniques");c.setDescription("Quilts showcasing specialized techniques such as embroidery, English paper piecing, foundation piecing, paper piecing, cathedral windows, miniature quilts (a scaled down version of a full-sized pattern), whole cloth, yo-yo quilts, heavily embellished quilts and quilts using unusual quilting techniques such as sashiko or boro.  Items do not have to have a traditional quilting stitch through three layers.");
 			c.setShortDescription("Quilts showcasing specialized techniques");
+			c.setDisplayOrder(order++);
 			showService.createCategory(showId, c);
+
+			c.setName("Applique");c.setDescription("A quilt with applique as primary technique.  Applique may be sewn down with any method, but not may be only fused on.  Any size.");
+			c.setShortDescription("A quilt with applique as primary technique");
+			c.setDisplayOrder(order++);
+			showService.createCategory(showId, c);
+
+			c.setName("Juniors");c.setDescription("Any quilter who is under age 18 as of July 21, 2023.  The Junior Quilter must have constructed the quilt themselves with only direction from an adult.  Quilting may have been completed by someone other than the Junior Quilter.");
+			c.setShortDescription("Any quilter who is under age 18");
+			c.setDisplayOrder(order++);
+			showService.createCategory(showId, c);
+
+			c.setName("Scrap Quilts");c.setDescription("Quilt top must incorporate at least 50 different fabrics.  Any technique, any size.");
+			c.setShortDescription("Top incorporates at least 50 different fabrics");
+			c.setDisplayOrder(order++);
+			showService.createCategory(showId, c);
+
+			c.setName("Seasonal Quilts");c.setDescription("Any quilt reflecting traditional holiday or seasonal motifs.  Examples include Christmas, Halloween, fall, winter, spring or summer themes, Easter, 4th of July, Valentine’s Day, etc.");
+			c.setShortDescription("Any quilt reflecting holiday or seasonal motifs");
+			c.setDisplayOrder(order++);
+			showService.createCategory(showId, c);
+//
+//			c.setName("Kits including Block of the Month and Row by Row");c.setDescription("This category includes all quilts made from any combination of units (patterns, fabrics, etc.) that were pre-selected by someone other than the quiltmaker.  Any technique, any size.");
+//			c.setShortDescription("A quilt made from a kit");
+//			c.setDisplayOrder(order++);
+//			showService.createCategory(showId, c);
 
 			c.setName("Traditional Quilt Large");c.setDescription("Total perimeter greater than 260 inches.");
 			c.setShortDescription("Total perimeter greater than 260 inches.");
+			c.setDisplayOrder(order++);
 			showService.createCategory(showId, c);
 
 			c.setName("Traditional Quilt Small");c.setDescription("Total perimeter less than 260 inches.");
 			c.setShortDescription("Total perimeter less than 260 inches");
+			c.setDisplayOrder(order++);
+			showService.createCategory(showId, c);
+
+			c.setName("President's Challenge - Not Judged");c.setDescription("");c.setJudgeable(Boolean.FALSE);
+			c.setShortDescription("");
+			c.setDisplayOrder(order++);
 			showService.createCategory(showId, c);
 		}
 		catch(NoActiveShowException e) {
@@ -410,7 +438,7 @@ public class ShowController implements InitializingBean {
 		Long showId = showService.getActiveShow().getId();
 		TagCategory tagCategory = new TagCategory();
 		
-		tagCategory.setName("Quilting Style");tagCategory.setDescription("Quilting approached used");tagCategory.setRequireOne(true);tagCategory.setOnlyOne(true);
+		tagCategory.setName("Quilting Style");tagCategory.setDescription("Quilting approached used");tagCategory.setRequireOne(true);tagCategory.setOnlyOne(false);
 		tagCategory = showService.createTagCategory(showId, tagCategory);
 		
 		tagCategory = new TagCategory();
@@ -513,6 +541,7 @@ public class ShowController implements InitializingBean {
 			e.printStackTrace();
 		}
 		
+		Person admin = personService.getUser("admin");
 		
 		Random r = new Random();
 		for(int i=0; i < 10; i++) {
@@ -526,8 +555,14 @@ public class ShowController implements InitializingBean {
 			q.setCategory(show.getCategories().stream().skip(i % show.getCategories().size()).findFirst().get());
 			q.getTags().addAll(show.getTagCategories().stream().skip(i % show.getTagCategories().size()).findFirst().get().getTags());
 			
+			if((i % 2) == 0) {
+				q.setEnteredBy(admin);
+				admin.addQuilt(q);
+			}
+			
 			try {
 				showService.addQuilt(show.getId(), q);
+				personService.save(admin);
 			} catch (NoActiveShowException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
