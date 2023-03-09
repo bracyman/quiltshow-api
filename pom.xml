@@ -12,7 +12,7 @@
 	<groupId>org.eihq</groupId>
 	<artifactId>quiltshow</artifactId>
 	<name>quiltshow</name>
-	<description>Demo project for Spring Boot</description>
+	<description>Eastern Iowa Quilt Guild Show Site</description>
 	<properties>
 		<java.version>11</java.version>
 	</properties>
@@ -73,6 +73,12 @@
 			<artifactId>spring-boot-configuration-processor</artifactId>
 			<optional>true</optional>
 		</dependency>
+		<dependency>
+			<groupId>com.squareup</groupId>
+			<artifactId>square</artifactId>
+			<version>27.1.0.20230119</version>
+		</dependency>
+
 	</dependencies>
 
 	<build>

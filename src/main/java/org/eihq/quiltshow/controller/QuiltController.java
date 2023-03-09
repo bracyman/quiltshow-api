@@ -5,11 +5,16 @@ import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.List;
 
+import org.eihq.quiltshow.configuration.UserRoles;
+import org.eihq.quiltshow.exception.PaymentException;
+import org.eihq.quiltshow.model.PaymentData;
 import org.eihq.quiltshow.model.Person;
 import org.eihq.quiltshow.model.Quilt;
 import org.eihq.quiltshow.repository.QuiltRepository;
 import org.eihq.quiltshow.repository.QuiltSearchBuilder;
+import org.eihq.quiltshow.service.PaymentService;
 import org.eihq.quiltshow.service.PersonService;
+import org.eihq.quiltshow.service.UserAuthentication;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -21,11 +26,17 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 
 @CrossOrigin(origins="*")
 @RestController
 @RequestMapping("/quilts")
+@Slf4j
 public class QuiltController {
 
 	@Autowired
@@ -33,16 +44,23 @@ public class QuiltController {
 
 	@Autowired
 	private PersonService personService;
+
+	@Autowired
+	private PaymentService paymentService;
+	
+	@Autowired
+	private UserAuthentication userAuthentication;
 	
 	
 	@Autowired
 	QuiltSearchBuilder quiltSearchBuilder;
 
-	@GetMapping
-	public List<Quilt> getQuilts(Authentication auth) {
+	@GetMapping("")
+	public List<Quilt> getQuilts(Authentication auth, @RequestParam(name = "personal", required = false) String personal) {
 		String email = auth.getName();
+		boolean onlyPersonal = (personal != null) && "true".equalsIgnoreCase(personal);
 		
-		if(email.equals("admin")) {
+		if(!onlyPersonal && userAuthentication.hasRole(UserRoles.ROLE_ADMIN)) {
 			return quiltRepository.findAll();
 		}
 		
@@ -107,10 +125,13 @@ public class QuiltController {
 
 	@PutMapping("/{id}")
 	public ResponseEntity<Quilt> updateQuilt(@PathVariable Long id, @RequestBody Quilt quilt) {
-		Quilt currentQuilt = quiltRepository.findById(id).orElseThrow(RuntimeException::new);
+		Quilt currentQuilt = quiltRepository.findById(id).orElse(null);
+		
+		if(currentQuilt == null) {
+			return ResponseEntity.notFound().build();
+		}
 		
 		Quilt updatedQuilt = quiltRepository.save(quilt);
-
 		return ResponseEntity.ok(updatedQuilt);
 	}
 
@@ -119,4 +140,45 @@ public class QuiltController {
 		quiltRepository.deleteById(id);
 		return ResponseEntity.ok().build();
 	}
+	
+	
+	@GetMapping("/total-due")
+	public ResponseEntity<UserInvoice> getUserTotalDue(Authentication auth) {
+		String email = auth.getName();
+		
+		Person user = personService.getUser(email);
+		if(user == null) {
+			return ResponseEntity.notFound().build();
+		}
+
+		List<Quilt> quiltsDue = paymentService.getUnpaidQuilts(user);
+		UserInvoice userInvoice = new UserInvoice(paymentService.amountDue(user), quiltsDue.size());
+		return ResponseEntity.ok(userInvoice);		
+	}	
+	
+	@GetMapping("/pay")
+	public ResponseEntity<String> payQuilts(Authentication auth) {
+		String email = auth.getName();
+		
+		Person user = personService.getUser(email);
+		if(user == null) {
+			return ResponseEntity.notFound().build();
+		}
+
+		try {
+			PaymentData paymentData = paymentService.createPayment(user);
+			return ResponseEntity.ok(paymentData.getCheckoutUrl());
+		}
+		catch(PaymentException e) {
+			log.error("Error fetching amount due for " + user.getEmail(), e);
+			return ResponseEntity.internalServerError().body("Error encountered creating order: " + e.getMessage());
+		}		
+	}
+}
+
+@Data
+@AllArgsConstructor
+class UserInvoice {
+	Double totalDue;
+	int numQuilts;
 }
