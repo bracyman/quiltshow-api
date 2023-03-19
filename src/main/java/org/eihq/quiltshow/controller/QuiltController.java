@@ -3,6 +3,7 @@ package org.eihq.quiltshow.controller;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 
 import org.eihq.quiltshow.configuration.UserRoles;
@@ -15,6 +16,7 @@ import org.eihq.quiltshow.repository.QuiltSearchBuilder;
 import org.eihq.quiltshow.service.PaymentService;
 import org.eihq.quiltshow.service.PersonService;
 import org.eihq.quiltshow.service.UserAuthentication;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -35,9 +37,11 @@ import lombok.extern.slf4j.Slf4j;
 
 @CrossOrigin(origins="*")
 @RestController
-@RequestMapping("/quilts")
+@RequestMapping("/api/quilts")
 @Slf4j
-public class QuiltController {
+public class QuiltController implements InitializingBean {
+	
+	private static final Integer STARTING_QUILT_NUMBER = 1000;
 
 	@Autowired
 	private QuiltRepository quiltRepository;
@@ -50,6 +54,8 @@ public class QuiltController {
 	
 	@Autowired
 	private UserAuthentication userAuthentication;
+	
+	private int nextQuiltNumber = 1000;
 	
 	
 	@Autowired
@@ -112,7 +118,10 @@ public class QuiltController {
 	}
 	
 	private ResponseEntity<Quilt> createQuilt(Person user, Quilt quilt) throws URISyntaxException {
-		if(user != null) {
+		if(user != null) {			
+			resolveHangingPreference(user, quilt);
+
+			quilt.setNumber(nextQuiltNumber());
 			quilt.setEnteredBy(user);
 			quiltRepository.save(quilt);
 			user.addQuilt(quilt);
@@ -124,12 +133,15 @@ public class QuiltController {
 	}
 
 	@PutMapping("/{id}")
-	public ResponseEntity<Quilt> updateQuilt(@PathVariable Long id, @RequestBody Quilt quilt) {
+	public ResponseEntity<Quilt> updateQuilt(Authentication auth, @PathVariable Long id, @RequestBody Quilt quilt) {
 		Quilt currentQuilt = quiltRepository.findById(id).orElse(null);
 		
 		if(currentQuilt == null) {
 			return ResponseEntity.notFound().build();
 		}
+		
+		Person user = personService.getUser(auth.getName());
+		resolveHangingPreference(user, currentQuilt);
 		
 		Quilt updatedQuilt = quiltRepository.save(quilt);
 		return ResponseEntity.ok(updatedQuilt);
@@ -173,6 +185,42 @@ public class QuiltController {
 			log.error("Error fetching amount due for " + user.getEmail(), e);
 			return ResponseEntity.internalServerError().body("Error encountered creating order: " + e.getMessage());
 		}		
+	}
+
+	
+	private int nextQuiltNumber() {
+		return Integer.valueOf(nextQuiltNumber++);
+	}
+
+	/**
+	 * Initialize the quilt number counter
+	 */
+	@Override
+	public void afterPropertiesSet() throws Exception {
+		Integer currentLastQuiltNumber = quiltRepository.getMaxQuiltNumber();
+		nextQuiltNumber = (currentLastQuiltNumber == null) ? STARTING_QUILT_NUMBER : (currentLastQuiltNumber + 1);
+	}
+	
+	
+	private void resolveHangingPreference(Person person, Quilt quilt) {		
+		List<Quilt> quiltsByPreference = new LinkedList<>(person.getEntered());
+		quiltsByPreference.sort((a,b) -> (a.getHangingPreference() - b.getHangingPreference()));
+		
+		int offset = 0;
+		for(int i = 0; i < quiltsByPreference.size(); i++) {
+			Quilt current = quiltsByPreference.get(i);
+			if(current.getId() != quilt.getId()) {
+				if(current.getHangingPreference() == quilt.getHangingPreference()) {
+					offset++;
+				}
+				
+				current.setHangingPreference(current.getHangingPreference() + offset);
+			}
+		}
+		
+		if(offset > 0) {
+			quiltRepository.saveAll(quiltsByPreference);
+		}
 	}
 }
 

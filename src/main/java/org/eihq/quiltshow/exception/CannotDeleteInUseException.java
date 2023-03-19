@@ -14,7 +14,7 @@ public class CannotDeleteInUseException extends Exception {
 	private static final long serialVersionUID = -3439968488168986636L;
 	
 	public CannotDeleteInUseException(String objectName, List<String> inUseBy) {
-		super("Cannot delete %s: currently in use by at least one %s".formatted(
+		super(String.format("Cannot delete %s: currently in use by at least one %s", 
 				objectName,
 				inUseBy.stream().collect(Collectors.joining(", "))));
 	}

@@ -1,5 +1,6 @@
 package org.eihq.quiltshow.repository;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -20,7 +21,7 @@ public class StringListConverter implements AttributeConverter<List<String>, Str
 		if(dbData == null) {
 			return null;
 		}
-		return List.of(dbData.split(","));
+		return Arrays.asList(dbData.split(","));
 	}
 
 }

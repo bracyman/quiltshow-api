@@ -1,7 +1,9 @@
 package org.eihq.quiltshow.model;
 
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.springframework.util.StringUtils;
@@ -102,7 +104,7 @@ public class SearchField implements Serializable {
 		if(getMatches() == null) {
 			return null;
 		}
-		return List.of(getMatches().split(","));
+		return Arrays.asList(getMatches().split(","));
 	}
 	
 	@JsonIgnore
@@ -110,7 +112,7 @@ public class SearchField implements Serializable {
 		if(getMatches() == null) {
 			return null;
 		}
-		return Stream.of(getMatches().split(",")).map(m -> Integer.valueOf(m)).toList();
+		return Stream.of(getMatches().split(",")).map(m -> Integer.valueOf(m)).collect(Collectors.toList());
 	}	
 	
 	@JsonIgnore
@@ -118,6 +120,6 @@ public class SearchField implements Serializable {
 		if(getMatches() == null) {
 			return null;
 		}
-		return Stream.of(getMatches().split(",")).map(m -> Long.valueOf(m)).toList();
+		return Stream.of(getMatches().split(",")).map(m -> Long.valueOf(m)).collect(Collectors.toList());
 	}
 }

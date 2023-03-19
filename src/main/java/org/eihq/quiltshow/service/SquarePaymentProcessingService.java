@@ -19,6 +19,7 @@ import com.squareup.square.api.CheckoutApi;
 import com.squareup.square.exceptions.ApiException;
 import com.squareup.square.models.CreatePaymentLinkRequest;
 import com.squareup.square.models.CreatePaymentLinkResponse;
+import com.squareup.square.models.GetPaymentResponse;
 import com.squareup.square.models.Money;
 import com.squareup.square.models.QuickPay;
 
@@ -89,6 +90,39 @@ public class SquarePaymentProcessingService implements PaymentProcessingService,
 			log.error(ex.getMessage(), ex);
 			throw ex;
 		}
+	}
+
+	@Override
+	public Status getPaymentStatus(PaymentData paymentData) throws PaymentException {
+		if(paymentData == null) {
+			return Status.ERROR;
+		}
+		GetPaymentResponse response;
+		try {
+			response = squareClient.getPaymentsApi().getPayment(paymentData.getPaymentProcessorId());
+		} catch (ApiException | IOException e) {
+			throw new PaymentException(e.getMessage(), e);
+		}
+		
+		String status = response.getPayment().getStatus();
+		
+		if("APPROVED".equalsIgnoreCase(status)) {
+			return Status.VERIFIED;
+		}
+		else if("COMPLETED".equalsIgnoreCase(status)) {
+			return Status.COMPLETED;
+		}
+		else if("PENDING".equalsIgnoreCase(status)) {
+			return Status.IN_PROCESS;
+		}
+		else if("CANCELED".equalsIgnoreCase(status)) {
+			return Status.ERROR;
+		}
+		else if("FAILED".equalsIgnoreCase(status)) {
+			return Status.ERROR;
+		}
+		
+		return Status.ERROR;
 	}
 	
 	protected CreatePaymentLinkRequest createPaymentLinkRequest(String name, String description, Double amount) {

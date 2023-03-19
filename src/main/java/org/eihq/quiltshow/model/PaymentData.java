@@ -21,7 +21,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class PaymentData {
 	public enum Status {
-		STARTED, IN_PROCESS, VERIFIED, ERROR
+		STARTED, IN_PROCESS, VERIFIED, ERROR, COMPLETED
 	};
 
 	@Id

@@ -3,8 +3,10 @@ package org.eihq.quiltshow.repository;
 import java.lang.reflect.Field;
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
@@ -65,7 +67,7 @@ public class QuiltSearchBuilder {
 			.select(quiltRoot)
 			.where(cb.or(predicates.toArray(new Predicate[predicates.size()])));
 		
-		query.orderBy(List.of("enteredBy", "name", "description", "additionalQuilters").stream().map(o -> sortField(cb, quiltRoot, o)).toList());
+		query.orderBy(Arrays.asList("enteredBy", "name", "description", "additionalQuilters").stream().map(o -> sortField(cb, quiltRoot, o)).collect(Collectors.toList()));
 	
 		return entityManager.createQuery(query);
 	}
@@ -101,7 +103,7 @@ public class QuiltSearchBuilder {
 			.select(quiltRoot)
 			.where(cb.and(predicates.toArray(new Predicate[predicates.size()])));
 		
-		query.orderBy(report.getSortOrder().stream().map(o -> sortField(cb, quiltRoot, o)).toList());
+		query.orderBy(report.getSortOrder().stream().map(o -> sortField(cb, quiltRoot, o)).collect(Collectors.toList()));
 
 		return entityManager.createQuery(query);
 	}
@@ -238,7 +240,7 @@ public class QuiltSearchBuilder {
 
 
 	private List<GroupSize> groupSizeList(List<String> sizes) {
-		return sizes.stream().map(s -> GroupSize.from(s)).toList();
+		return sizes.stream().map(s -> GroupSize.from(s)).collect(Collectors.toList());
 	}
 
 	
@@ -247,7 +249,7 @@ public class QuiltSearchBuilder {
 			Category c = new Category();
 			c.setId(id);
 			return c;
-		}).toList();
+		}).collect(Collectors.toList());
 	}
 
 	private List<Tag> tagList(List<Long> ids) {
@@ -255,7 +257,7 @@ public class QuiltSearchBuilder {
 			Tag t = new Tag();
 			t.setId(id);
 			return t;
-		}).toList();
+		}).collect(Collectors.toList());
 	}	
 
 	private List<Award> awardList(List<Long> ids) {
@@ -263,7 +265,7 @@ public class QuiltSearchBuilder {
 			Award a = new Award();
 			a.setId(id);
 			return a;
-		}).toList();
+		}).collect(Collectors.toList());
 	}
 
 	/**

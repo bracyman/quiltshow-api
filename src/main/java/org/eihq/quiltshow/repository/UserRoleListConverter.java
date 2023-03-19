@@ -23,7 +23,7 @@ public class UserRoleListConverter implements AttributeConverter<List<UserRoles>
 		if(dbData == null) {
 			return null;
 		}
-		return Stream.of(dbData.split(",")).map(s -> UserRoles.from(s)).toList();
+		return Stream.of(dbData.split(",")).map(s -> UserRoles.from(s)).collect(Collectors.toList());
 	}
 
 }

@@ -8,19 +8,19 @@ public class NotFoundException extends RuntimeException {
 	}
 
 	public NotFoundException(String objectType, String id) {
-		super("%s [%s] cannot be located".formatted(objectType, id));
+		super(String.format("%s [%s] cannot be located", objectType, id));
 	}
 
 	public NotFoundException(String objectType, int id) {
-		super("%s [%d] cannot be located".formatted(objectType, id));
+		super(String.format("%s [%d] cannot be located", objectType, id));
 	}
 
 	public NotFoundException(String objectType, long id) {
-		super("%s [%d] cannot be located".formatted(objectType, id));
+		super(String.format("%s [%d] cannot be located", objectType, id));
 	}
 
 	public NotFoundException(String objectType, Object id) {
-		super("%s [%s] cannot be located".formatted(objectType, id.toString()));
+		super(String.format("%s [%s] cannot be located", objectType, id.toString()));
 	}
 
 }
