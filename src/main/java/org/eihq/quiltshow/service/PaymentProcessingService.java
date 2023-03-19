@@ -1,7 +1,12 @@
 package org.eihq.quiltshow.service;
 
+import java.io.IOException;
+
 import org.eihq.quiltshow.exception.PaymentException;
 import org.eihq.quiltshow.model.PaymentData;
+import org.eihq.quiltshow.model.PaymentData.Status;
+
+import com.squareup.square.exceptions.ApiException;
 
 public interface PaymentProcessingService {
 
@@ -21,4 +26,13 @@ public interface PaymentProcessingService {
 	 * @throws PaymentException
 	 */
 	public PaymentData submitPayment(String name, String description, Double amount) throws PaymentException;
+
+	/**
+	 * Retrieves the payment status from the payment processor, and converts it to a PaymentData Status
+	 * @param paymentData
+	 * @return
+	 * @throws ApiException
+	 * @throws IOException
+	 */
+	public Status getPaymentStatus(PaymentData paymentData) throws PaymentException;
 }

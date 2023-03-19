@@ -3,8 +3,8 @@ package org.eihq.quiltshow.service;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.when;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -24,6 +24,8 @@ import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
@@ -162,7 +164,19 @@ public class PaymentServiceTest {
 	
 	
 	@Test
-	void amountDue_shouldIgnoreQuilts_alreadyPaid() {
+	void amountDue_shouldIgnoreQuilts_alreadyPaid() throws PaymentException {
+		when(paymentProcessingService.getPaymentStatus(any(PaymentData.class))).then(new Answer<Status>(){
+
+			@Override
+			public Status answer(InvocationOnMock invocation) throws Throwable {
+				PaymentData arg = invocation.getArgument(0, PaymentData.class);
+				if(arg == null) {
+					return Status.STARTED;
+				}
+				return arg.getStatus();
+			}
+			
+		});
 		Person p = new Person();
 		Quilt q = new Quilt();
 		q.setJudged(true);
@@ -171,7 +185,8 @@ public class PaymentServiceTest {
 		q = new Quilt();
 		q.setJudged(true);
 		q.setPaymentData(new PaymentData());
-		q.getPaymentData().setStatus(Status.IN_PROCESS);
+		q.getPaymentData().setId(100l);
+		q.getPaymentData().setStatus(Status.VERIFIED);
 		p.addQuilt(q);
 		
 		Double due = service.amountDue(p);
@@ -250,11 +265,11 @@ public class PaymentServiceTest {
 		
 		assertTrue("Request Name", 
 				requestName.contains("EIHQ Quilt Show - Registering")
-				&& requestName.contains("%d".formatted(quilts.size())));
+				&& requestName.contains(String.format("%d", quilts.size())));
 		assertTrue("Request Description", 
 				requestDescription.contains(p.getFullName())
-				&& requestDescription.contains("%d".formatted(quilts.size()))
-				&& requestDescription.contains("%s".formatted(" quilts for registration")));
+				&& requestDescription.contains(String.format("%d", quilts.size()))
+				&& requestDescription.contains(String.format("%s", " quilts for registration")));
 		assertEquals(Double.valueOf(32.0), requestAmount);
 		
 		// verify the response values

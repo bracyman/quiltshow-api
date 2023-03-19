@@ -2,6 +2,8 @@ package org.eihq.quiltshow.service;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import org.eihq.quiltshow.exception.PaymentException;
@@ -59,7 +61,7 @@ public class PaymentService {
 		
 		return calculatePrice(person.getEntered().stream()
 				.filter(q -> (q.getPaymentData() != null) && (q.getPaymentData().getStatus() == Status.IN_PROCESS))
-				.toList());
+				.collect(Collectors.toList()));
 	}
 	
 	
@@ -84,7 +86,7 @@ public class PaymentService {
 			return null;
 		}
 				
-		log.info("Submitting payment request for %d quilts".formatted(quilts.size()));
+		log.info(String.format("Submitting payment request for %d quilts", quilts.size()));
 		PaymentData paymentData = paymentProcessingService.submitPayment(
 				buildPaymentName(quilts), 
 				buildPaymentDescription(quilts), 
@@ -92,7 +94,7 @@ public class PaymentService {
 				
 		paymentData.setQuilts(quilts);
 		paymentDataRepository.save(paymentData);
-		log.info("Payment %s request created".formatted(paymentData.getOrderId()));
+		log.info(String.format("Payment %s request created", paymentData.getOrderId()));
 		
 		// update the quilt payment records
 		quilts.forEach(q -> {
@@ -113,11 +115,35 @@ public class PaymentService {
 			return Collections.emptyList();
 		}
 		
+		Map<Long, Boolean> notPaid = new ConcurrentHashMap<>();
+		person.getEntered().forEach(q -> {
+			if((q.getPaymentData() != null) && !notPaid.containsKey(q.getPaymentData().getId())) {
+				notPaid.put(q.getPaymentData().getId(), !paymentSuccess(q.getPaymentData()));
+			}
+		});
+		
 		return person.getEntered().stream()
-				.filter(q -> q.getPaymentData() == null)
-				.toList();
+				.filter(q -> (q.getPaymentData() == null) || notPaid.getOrDefault(q.getPaymentData().getId(), false))
+				.collect(Collectors.toList());
 	}
 	
+	/**
+	 * Determines if the quilt payment has been approved or completed
+	 * @param paymentData
+	 * @return
+	 * @throws PaymentException 
+	 */
+	private boolean paymentSuccess(PaymentData paymentData) {
+		Status status;
+		try {
+			status = paymentProcessingService.getPaymentStatus(paymentData);
+			return (status == Status.COMPLETED) || (status == Status.VERIFIED) || (status == Status.IN_PROCESS);  
+		} catch (PaymentException e) {
+			log.error(String.format("Unable to determine payment status for payment data %d", paymentData.getId()), e);
+			return false;
+		}
+	}
+
 	/**
 	 * Returns the total price to register all of the quilts in the list
 	 * @param quilts
@@ -160,7 +186,7 @@ public class PaymentService {
 	 * @return
 	 */
 	private String buildPaymentName(List<Quilt> quilts) {
-		return "EIHQ Quilt Show - Registering %d quilts".formatted(quilts.size());
+		return String.format("EIHQ Quilt Show - Registering %d quilts", quilts.size());
 	}
 
 	/**
@@ -169,7 +195,7 @@ public class PaymentService {
 	 * @return
 	 */
 	private String buildPaymentDescription(List<Quilt> quilts) {
-		return "[%s] submitting %d quilts for registration".formatted(
+		return String.format("[%s] submitting %d quilts for registration", 
 				quilts.stream().map(q -> q.getEnteredBy().getFullName()).collect(Collectors.joining(",")),
 				quilts.size()
 			);

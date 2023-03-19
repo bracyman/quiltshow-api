@@ -1,5 +1,6 @@
 package org.eihq.quiltshow.service;
 
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -155,7 +156,7 @@ public class ShowService {
 		if(category.isPresent()) {
 			if(quiltRepository.findByCategory(category.get()).size() > 0) {
 				log.error("Cannot delete category {}: currently in use", categoryId);
-				throw new CannotDeleteInUseException(category.get().getName(), List.of("Quilt"));
+				throw new CannotDeleteInUseException(category.get().getName(), Arrays.asList("Quilt"));
 			}
 			categoryRepository.delete(category.get());
 		}
@@ -200,11 +201,11 @@ public class ShowService {
 		if(show == null) {
 			throw new NoActiveShowException();
 		}
-		if(tagCategory.isEmpty()) {
+		if(!tagCategory.isPresent()) {
 			throw new NotFoundException("TagCategory", tagCategoryId);
 		}
 		
-		show.getTagCategories().remove(tagCategory);
+		show.getTagCategories().remove(tagCategory.get());
 		showRepository.save(show);
 		
 		tagCategory.get().getTags().forEach(t -> deleteTag(t.getId()));
@@ -225,7 +226,7 @@ public class ShowService {
 	public Tag createTag(Long tagCategoryId, Tag newTag) {
 		Optional<TagCategory> tagCategory = tagCategoryRepository.findById(tagCategoryId);
 		
-		if(tagCategory.isEmpty()) {
+		if(!tagCategory.isPresent()) {
 			throw new NotFoundException("Tag Category", tagCategoryId);
 		}
 		
@@ -329,7 +330,7 @@ public class ShowService {
 		if(award.isPresent()) {
 			if(!award.get().getAwardedTo().isEmpty()) {
 				log.error("Cannot delete award {}: currently in use", awardId);
-				throw new CannotDeleteInUseException(award.get().getName(), List.of("Quilt"));
+				throw new CannotDeleteInUseException(award.get().getName(), Arrays.asList("Quilt"));
 			}
 			awardRepository.delete(award.get());
 		}

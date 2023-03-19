@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.eihq.quiltshow.configuration.UserRoles;
 import org.eihq.quiltshow.controller.models.ShowSummary;
@@ -33,12 +34,13 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @CrossOrigin(origins="*")
 @RestController
-@RequestMapping("/shows")
+@RequestMapping("/api/shows")
 public class ShowController implements InitializingBean {
 
 	@Autowired
@@ -55,7 +57,7 @@ public class ShowController implements InitializingBean {
 
 	@GetMapping("/")
 	public ResponseEntity<List<ShowSummary>> getShows() {
-		return ResponseEntity.ok(showService.getAllShows().stream().map(s -> ShowSummary.from(s)).toList());
+		return ResponseEntity.ok(showService.getAllShows().stream().map(s -> ShowSummary.from(s)).collect(Collectors.toList()));
 	}
 
 	@GetMapping("/{showId}")
@@ -72,29 +74,33 @@ public class ShowController implements InitializingBean {
 	}
 
 	@PostMapping("/")
-	public ResponseEntity<Show> createShow(Show newShow) {
+	public ResponseEntity<Show> createShow(@RequestBody Show newShow) {
 		Show created = showService.createShow(newShow);
 		return ResponseEntity.ok(created);
 	}
 
 	@PostMapping("/{showId}")
-	public ResponseEntity<Show> updateShow(@PathVariable("showId")Long showId, Show updatedShow) {
+	public ResponseEntity<Show> updateShow(@PathVariable("showId")String showId, @RequestBody Show updatedShow) {
 		if(!userAuthentication.hasRole(UserRoles.ROLE_ADMIN)) {
 			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
 		}
+		
+		Long longId = Long.parseLong(showId);
 		
 		Show show = showService.updateShow(updatedShow);
 		return ResponseEntity.ok(show);
 	}
 
 	@DeleteMapping("/{showId}")
-	public ResponseEntity<Long> deleteShow(@PathVariable("showId")Long showId) {
+	public ResponseEntity<Long> deleteShow(@PathVariable("showId")String showId) {
 		if(!userAuthentication.hasRole(UserRoles.ROLE_ADMIN)) {
 			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
 		}
 		
-		showService.deleteShow(showId);
-		return ResponseEntity.ok(showId);
+		Long longId = Long.parseLong(showId);
+		
+		showService.deleteShow(longId);
+		return ResponseEntity.ok(longId);
 	}
 
 
@@ -120,56 +126,70 @@ public class ShowController implements InitializingBean {
 	 * @throws NoSuchShowException
 	 */
 	@GetMapping("/{showId}/categories")
-	public ResponseEntity<Set<Category>> getCategories(@PathVariable("showId")Long showId) {
+	public ResponseEntity<Set<Category>> getCategories(@PathVariable("showId")String showId) {
 		Show currentShow = showService.getCurrentShow();
 		if(currentShow == null) {
 			throw new NotFoundException("No shows can be found");
 		}
 		
-		return ResponseEntity.ok(showService.getShow(showId).getCategories());
+
+		Long longId = Long.parseLong(showId);
+		
+		return ResponseEntity.ok(showService.getShow(longId).getCategories());
 	}
 
 	@PostMapping("/{showId}/categories")
-	public ResponseEntity<Category> createCategory(@PathVariable("showId")Long showId, Category newCategory) throws NoActiveShowException {
+	public ResponseEntity<Category> createCategory(@PathVariable("showId")String showId, @RequestBody Category newCategory) throws NoActiveShowException {
 		if(!userAuthentication.hasRole(UserRoles.ROLE_ADMIN)) {
 			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
 		}
+
+		Long longId = Long.parseLong(showId);
 		
-		Category created = showService.createCategory(showId, newCategory);
+		Category created = showService.createCategory(longId, newCategory);
 		return ResponseEntity.ok(created);
 	}
 
 	@PostMapping("/{showId}/categories/{categoryId}")
-	public ResponseEntity<Category> updateCategory(@PathVariable("showId")Long showId, @PathVariable("categoryId") Long categoryId, Category category) {
+	public ResponseEntity<Category> updateCategory(@PathVariable("showId")String showId, @PathVariable("categoryId") Long categoryId, @RequestBody Category category) {
 		if(!userAuthentication.hasRole(UserRoles.ROLE_ADMIN)) {
 			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
 		}
-		
+
+		Long longId = Long.parseLong(showId);
+
 		Category updated = showService.updateCategory(category);
 		return ResponseEntity.ok(updated);
 	}
 
 	@DeleteMapping("/{showId}/categories/{categoryId}")
-	public ResponseEntity<Long> deleteCategory(@PathVariable("showId")Long showId, @PathVariable("categoryId") Long categoryId) throws CannotDeleteInUseException {
+	public ResponseEntity<Long> deleteCategory(@PathVariable("showId")String showId, @PathVariable("categoryId") Long categoryId) throws CannotDeleteInUseException {
 		if(!userAuthentication.hasRole(UserRoles.ROLE_ADMIN)) {
 			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
 		}
-		
+
+		Long longId = Long.parseLong(showId);
+
 		showService.deleteCategory(categoryId);
 		return ResponseEntity.ok(categoryId);
 	}
 	
 	
 	@GetMapping("/{showId}/tagCategories")
-	public ResponseEntity<Set<TagCategory>> getTagCategories(@PathVariable("showId")Long showId) {
-		return ResponseEntity.ok(showService.getShow(showId).getTagCategories());
+	public ResponseEntity<Set<TagCategory>> getTagCategories(@PathVariable("showId")String showId) {
+
+		Long longId = Long.parseLong(showId);
+
+		return ResponseEntity.ok(showService.getShow(longId).getTagCategories());
 	}
 	
 	@GetMapping("/{showId}/tagCategories/{tagCategoryId}")
-	public ResponseEntity<TagCategory> getTagCategory(@PathVariable("showId") Long showId, @PathVariable("tagCategoryId") Long tagCategoryId) {
-		Optional<TagCategory> tagCategory = showService.getShow(showId).getTagCategories().stream().filter(tc -> tc.getId().equals(tagCategoryId)).findFirst();
+	public ResponseEntity<TagCategory> getTagCategory(@PathVariable("showId") String showId, @PathVariable("tagCategoryId") Long tagCategoryId) {
+		Long longId = Long.parseLong(showId);
+
+		Optional<TagCategory> tagCategory = showService.getShow(longId).getTagCategories().stream().filter(tc -> tc.getId().equals(tagCategoryId)).findFirst();
 		
-		if(tagCategory.isEmpty()) {
+		if(!tagCategory.isPresent()) {
 			throw new NotFoundException("TagCategory", tagCategoryId);
 		}
 		
@@ -177,22 +197,28 @@ public class ShowController implements InitializingBean {
 	}
 	
 	@PostMapping("/{showId}/tagCategories")
-	public ResponseEntity<TagCategory> createTagCategory(@PathVariable("showId") Long showId, TagCategory tagCategory) throws NoActiveShowException {
-		TagCategory newTagCategory = showService.createTagCategory(showId, tagCategory);
+	public ResponseEntity<TagCategory> createTagCategory(@PathVariable("showId") String showId, @RequestBody TagCategory tagCategory) throws NoActiveShowException {
+		Long longId = Long.parseLong(showId);
+
+		TagCategory newTagCategory = showService.createTagCategory(longId, tagCategory);
 		
 		return ResponseEntity.ok(newTagCategory);
 	}
 	
 	@PostMapping("/{showId}/tagCategories/{tagCategoryId}")
-	public ResponseEntity<TagCategory> updateTagCategory(@PathVariable("showId") Long showId, @PathVariable("tagCategoryId") Long tagCategoryId, TagCategory tagCategory) throws NoActiveShowException {
+	public ResponseEntity<TagCategory> updateTagCategory(@PathVariable("showId") String showId, @PathVariable("tagCategoryId") Long tagCategoryId, @RequestBody TagCategory tagCategory) throws NoActiveShowException {
+		Long longId = Long.parseLong(showId);
+
 		TagCategory updatedTagCategory = showService.updateTagCategory(tagCategoryId, tagCategory);
 		
 		return ResponseEntity.ok(updatedTagCategory);
 	}
 	
 	@DeleteMapping("/{showId}/tagCategories/{tagCategoryId}")
-	public ResponseEntity<Long> deleteTagCategory(@PathVariable("showId") Long showId, @PathVariable("tagCategoryId") Long tagCategoryId) throws NoActiveShowException {
-		showService.deleteTagCategory(showId, tagCategoryId);
+	public ResponseEntity<Long> deleteTagCategory(@PathVariable("showId") String showId, @PathVariable("tagCategoryId") Long tagCategoryId) throws NoActiveShowException {
+		Long longId = Long.parseLong(showId);
+
+		showService.deleteTagCategory(longId, tagCategoryId);
 		return ResponseEntity.ok(tagCategoryId);
 	}
 
@@ -221,8 +247,10 @@ public class ShowController implements InitializingBean {
 	 * @throws NoSuchShowException
 	 */
 	@GetMapping("/{showId}/tags")
-	public ResponseEntity<Set<Tag>> getAllTags(@PathVariable("showId")Long showId) {
-		Set<TagCategory> tagCategories = showService.getShow(showId).getTagCategories();
+	public ResponseEntity<Set<Tag>> getAllTags(@PathVariable("showId")String showId) {
+		Long longId = Long.parseLong(showId);
+
+		Set<TagCategory> tagCategories = showService.getShow(longId).getTagCategories();
 		Set<Tag> tags = new HashSet<>();
 		
 		tagCategories.forEach(tc -> tags.addAll(tc.getTags()));
@@ -237,26 +265,34 @@ public class ShowController implements InitializingBean {
 	 * @throws NoSuchShowException
 	 */
 	@GetMapping("/{showId}/tagCategories/{tagCategoryId}/tags")
-	public ResponseEntity<Set<Tag>> getCategoryTags(@PathVariable("showId")Long showId, @PathVariable("tagCategoryId")Long tagCategoryId) {
+	public ResponseEntity<Set<Tag>> getCategoryTags(@PathVariable("showId")String showId, @PathVariable("tagCategoryId")Long tagCategoryId) {
+		Long longId = Long.parseLong(showId);
+
 		TagCategory tagCategory = showService.getTagCategory(tagCategoryId);
 		
 		return ResponseEntity.ok(tagCategory.getTags());
 	}
 
 	@PostMapping("/{showId}/tagCategories/{tagCategoryId}/tags")
-	public ResponseEntity<Tag> createTag(@PathVariable("showId")Long showId, @PathVariable("tagCategoryId")Long tagCategoryId, Tag newTag) throws NoActiveShowException {
-		Tag created = showService.createTag(showId, newTag);
+	public ResponseEntity<Tag> createTag(@PathVariable("showId")String showId, @PathVariable("tagCategoryId")Long tagCategoryId, @RequestBody Tag  newTag) throws NoActiveShowException {
+		Long longId = Long.parseLong(showId);
+
+		Tag created = showService.createTag(tagCategoryId, newTag);
 		return ResponseEntity.ok(created);
 	}
 
 	@PostMapping("/{showId}/tagCategories/{tagCategoryId}/tags/{tagId}")
-	public ResponseEntity<Tag> updateTag(@PathVariable("showId")Long showId, @PathVariable("tagId") Long tagId, Tag tag) {
+	public ResponseEntity<Tag> updateTag(@PathVariable("showId")String showId, @PathVariable("tagId") Long tagId, @RequestBody Tag tag) {
+		Long longId = Long.parseLong(showId);
+
 		Tag updated = showService.updateTag(tag);
 		return ResponseEntity.ok(updated);
 	}
 
 	@DeleteMapping("/{showId}/tagCategories/{tagCategoryId}/tags/{tagId}")
-	public ResponseEntity<Long> deleteTag(@PathVariable("showId")Long showId, @PathVariable("tagId") Long tagId) {
+	public ResponseEntity<Long> deleteTag(@PathVariable("showId")String showId, @PathVariable("tagId") Long tagId) {
+		Long longId = Long.parseLong(showId);
+
 		showService.deleteTag(tagId);
 		
 		return ResponseEntity.ok(tagId);
@@ -286,18 +322,24 @@ public class ShowController implements InitializingBean {
 	 * @throws NoSuchShowException
 	 */
 	@GetMapping("/{showId}/awards")
-	public Set<Award> getAwards(@PathVariable("showId")Long showId) {
-		return showService.getShow(showId).getAwards();
+	public Set<Award> getAwards(@PathVariable("showId")String showId) {
+		Long longId = Long.parseLong(showId);
+
+		return showService.getShow(longId).getAwards();
 	}
 
 	@PostMapping("/{showId}/awards")
-	public ResponseEntity<Award> createAward(@PathVariable("showId")Long showId, Award newAward) throws NoActiveShowException {
-		Award created = showService.createAward(showId, newAward);
+	public ResponseEntity<Award> createAward(@PathVariable("showId")String showId, @RequestBody Award newAward) throws NoActiveShowException {
+		Long longId = Long.parseLong(showId);
+
+		Award created = showService.createAward(longId, newAward);
 		return ResponseEntity.ok(created);
 	}
 
 	@PostMapping("/awards/{awardId}")
-	public ResponseEntity<Award> updateAward(@PathVariable("showId")Long showId, @PathVariable("awardId") Long awardId, Award award) {
+	public ResponseEntity<Award> updateAward(@PathVariable("showId")String showId, @PathVariable("awardId") Long awardId, @RequestBody Award award) {
+		Long longId = Long.parseLong(showId);
+
 		Award updated = showService.updateAward(award);
 		return ResponseEntity.ok(updated);
 	}
@@ -313,7 +355,9 @@ public class ShowController implements InitializingBean {
 	}
 
 	@DeleteMapping("/{showId}/awards/{awardId}")
-	public void deleteAward(@PathVariable("showId")Long showId, @PathVariable("awardId") Long awardId) throws CannotDeleteInUseException {
+	public void deleteAward(@PathVariable("showId")String showId, @PathVariable("awardId") Long awardId) throws CannotDeleteInUseException {
+		Long longId = Long.parseLong(showId);
+
 		showService.deleteAward(awardId);
 	}
 
@@ -330,9 +374,9 @@ public class ShowController implements InitializingBean {
 			
 			createDefaultTags();
 	
-//			createDefaultAwards();
+			createDefaultAwards();
 			
-//			createDefaultQuilt();
+			createDefaultQuilt();
 		}
 	}
 
@@ -408,11 +452,11 @@ public class ShowController implements InitializingBean {
 			c.setShortDescription("Any quilt reflecting holiday or seasonal motifs");
 			c.setDisplayOrder(order++);
 			showService.createCategory(showId, c);
-//
-//			c.setName("Kits including Block of the Month and Row by Row");c.setDescription("This category includes all quilts made from any combination of units (patterns, fabrics, etc.) that were pre-selected by someone other than the quiltmaker.  Any technique, any size.");
-//			c.setShortDescription("A quilt made from a kit");
-//			c.setDisplayOrder(order++);
-//			showService.createCategory(showId, c);
+
+			c.setName("Kits including Block of the Month and Row by Row");c.setDescription("This category includes all quilts made from any combination of units (patterns, fabrics, etc.) that were pre-selected by someone other than the quiltmaker.  Any technique, any size.");
+			c.setShortDescription("A quilt made from a kit");
+			c.setDisplayOrder(order++);
+			showService.createCategory(showId, c);
 
 			c.setName("Traditional Quilt Large");c.setDescription("Total perimeter greater than 260 inches.");
 			c.setShortDescription("Total perimeter greater than 260 inches.");
@@ -546,8 +590,8 @@ public class ShowController implements InitializingBean {
 		Random r = new Random();
 		for(int i=0; i < 10; i++) {
 			Quilt q = new Quilt();
-			q.setName("Quilt %d".formatted(i));
-			q.setDescription("This is quilt number %d".formatted(i));
+			q.setName(String.format("Quilt %d", i));
+			q.setDescription(String.format("This is quilt number %d", i));
 			q.setWidth(i * 100 * r.nextDouble());
 			q.setLength(i * 100 * r.nextDouble());
 			q.setGroupSize(GroupSize.values()[i % GroupSize.values().length]);

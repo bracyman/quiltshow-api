@@ -8,8 +8,10 @@ import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.time.ZonedDateTime;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.eihq.quiltshow.exception.PaymentException;
 import org.eihq.quiltshow.model.PaymentData;
@@ -130,7 +132,7 @@ public class SquarePaymentProcessingServiceTest {
 		String description = "test description";
 		Double amount = 53.0;
 		
-		CreatePaymentLinkResponse response = mockResponse(List.of("error1", "error2"));
+		CreatePaymentLinkResponse response = mockResponse(Arrays.asList("error1", "error2"));
 		when(checkoutApi.createPaymentLink(requestCapture.capture())).thenReturn(response);
 		
 		assertThrows(PaymentException.class, () -> service.submitPayment(name, description, amount));
@@ -154,7 +156,7 @@ public class SquarePaymentProcessingServiceTest {
 	}
 	
 	private CreatePaymentLinkResponse mockResponse(List<String> errorMessages) {
-		List<Error> errors = errorMessages.stream().map(e -> new Error(e, e, e, e)).toList();
+		List<Error> errors = errorMessages.stream().map(e -> new Error(e, e, e, e)).collect(Collectors.toList());
 		CreatePaymentLinkResponse response = new CreatePaymentLinkResponse(errors, null, null);
 		
 		return response;

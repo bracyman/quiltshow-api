@@ -1,5 +1,6 @@
 package org.eihq.quiltshow.service;
 
+import java.util.Arrays;
 import java.util.List;
 
 import org.eihq.quiltshow.exception.NotFoundException;
@@ -20,7 +21,7 @@ public class ReportService {
 
 	
 	public List<ReportCategory> getReportCategories() {
-		return List.of(ReportCategory.values());
+		return Arrays.asList(ReportCategory.values());
 	}
 	
 	

@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.eihq.quiltshow.model.Person;
 import org.eihq.quiltshow.repository.PersonRepository;
@@ -60,7 +61,7 @@ public class JpaUserDetailsService implements UserDetailsService {
 				return Collections.emptyList();
 			}
 			
-			return user.getRoles().stream().map(r -> r.getAuthority()).toList();
+			return user.getRoles().stream().map(r -> r.getAuthority()).collect(Collectors.toList());
 		}
 
 		@Override
