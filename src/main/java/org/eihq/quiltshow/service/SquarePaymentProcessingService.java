@@ -16,12 +16,14 @@ import org.springframework.stereotype.Service;
 import com.squareup.square.Environment;
 import com.squareup.square.SquareClient;
 import com.squareup.square.api.CheckoutApi;
+import com.squareup.square.api.OrdersApi;
 import com.squareup.square.exceptions.ApiException;
 import com.squareup.square.models.CreatePaymentLinkRequest;
 import com.squareup.square.models.CreatePaymentLinkResponse;
 import com.squareup.square.models.GetPaymentResponse;
 import com.squareup.square.models.Money;
 import com.squareup.square.models.QuickPay;
+import com.squareup.square.models.RetrieveOrderResponse;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -52,6 +54,8 @@ public class SquarePaymentProcessingService implements PaymentProcessingService,
 	SquareClient squareClient;
 	
 	CheckoutApi checkoutApi;
+	
+	OrdersApi ordersApi;
 
 	
 	public PaymentData submitPayment(String name, String description, Double amount) throws PaymentException {
@@ -97,14 +101,28 @@ public class SquarePaymentProcessingService implements PaymentProcessingService,
 		if(paymentData == null) {
 			return Status.ERROR;
 		}
-		GetPaymentResponse response;
+		
+		GetPaymentResponse paymentResponse = null;
 		try {
-			response = squareClient.getPaymentsApi().getPayment(paymentData.getPaymentProcessorId());
+			RetrieveOrderResponse orderResponse = ordersApi.retrieveOrder(paymentData.getOrderId());
+			
+			if((orderResponse.getOrder().getTenders() == null) || orderResponse.getOrder().getTenders().isEmpty()) {
+				log.trace("No tender submitted for order {}", paymentData.getOrderId());
+				return Status.ERROR;
+			}
+			
+			String paymentId = orderResponse.getOrder().getTenders().get(0).getPaymentId();
+			log.debug("Loading payment status for payment {}", paymentId);
+			paymentResponse = squareClient.getPaymentsApi().getPayment(paymentId);
 		} catch (ApiException | IOException e) {
 			throw new PaymentException(e.getMessage(), e);
 		}
 		
-		String status = response.getPayment().getStatus();
+		if(paymentResponse == null) {
+			return Status.ERROR;
+		}
+		
+		String status = paymentResponse.getPayment().getStatus();
 		
 		if("APPROVED".equalsIgnoreCase(status)) {
 			return Status.VERIFIED;
@@ -149,6 +167,8 @@ public class SquarePaymentProcessingService implements PaymentProcessingService,
 				.build();
 		
 		checkoutApi = squareClient.getCheckoutApi();
+		
+		ordersApi = squareClient.getOrdersApi();
 	}
 
 

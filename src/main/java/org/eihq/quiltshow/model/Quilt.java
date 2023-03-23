@@ -130,11 +130,11 @@ public class Quilt {
     /**
      * Returns additionalQuilters as a list of quilter names 
      */
-    public List<String> getAdditionalQuilters() {
+    public List<String> getAdditionalQuiltersList() {
     	return (additionalQuilters == null) ? Collections.emptyList() : Arrays.asList(additionalQuilters.split(","));
     }
     
-    public void setAdditionalQuilters(List<String> additionalQuilters) {
+    public void setAdditionalQuiltersList(List<String> additionalQuilters) {
     	this.additionalQuilters = additionalQuilters.stream().collect(Collectors.joining(","));
     }
 }
