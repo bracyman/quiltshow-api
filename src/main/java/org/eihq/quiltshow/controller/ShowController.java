@@ -382,13 +382,13 @@ public class ShowController implements InitializingBean {
 
 	private void createDefaultShow() {
 		Show show = new Show();
-		show.setName("Test Show");
+		show.setName("The Places You'll Go");
 		show.setActive(true);
 		show.setAddress1("123 Main St");
 		show.setCity("Cedar Rapids");
 		show.setState("TX");
 		show.setZipCode("52401");
-		show.setDescription("Just a test of the system");
+		show.setDescription("Easter Iowa Heirloom Quilters guild 2023 Show");
 
 		Calendar startDate = Calendar.getInstance();
 		startDate.set(2023, Calendar.JULY, 28, 9, 0, 0);
@@ -453,8 +453,8 @@ public class ShowController implements InitializingBean {
 			c.setDisplayOrder(order++);
 			showService.createCategory(showId, c);
 
-			c.setName("Kits including Block of the Month and Row by Row");c.setDescription("This category includes all quilts made from any combination of units (patterns, fabrics, etc.) that were pre-selected by someone other than the quiltmaker.  Any technique, any size.");
-			c.setShortDescription("A quilt made from a kit");
+			c.setName("Kits");c.setDescription("This category includes all quilts made from any combination of units (patterns, fabrics, etc.) that were pre-selected by someone other than the quiltmaker.  Any technique, any size.");
+			c.setShortDescription("Including Block of the Month and Row by Row");
 			c.setDisplayOrder(order++);
 			showService.createCategory(showId, c);
 
