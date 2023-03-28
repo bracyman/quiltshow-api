@@ -14,7 +14,7 @@ public interface PaymentProcessingService {
 	 * Returns the name of the payment processor
 	 * @return
 	 */
-	public String getServiceName();
+	String getServiceName();
 	
 	/**
 	 * Submits a payment request to a payment processor. Returns payment data, including an ID unique to the 
@@ -25,7 +25,7 @@ public interface PaymentProcessingService {
 	 * @return
 	 * @throws PaymentException
 	 */
-	public PaymentData submitPayment(String name, String description, Double amount) throws PaymentException;
+	PaymentData submitPayment(String name, String description, Double amount) throws PaymentException;
 
 	/**
 	 * Retrieves the payment status from the payment processor, and converts it to a PaymentData Status
@@ -34,5 +34,19 @@ public interface PaymentProcessingService {
 	 * @throws ApiException
 	 * @throws IOException
 	 */
-	public Status getPaymentStatus(PaymentData paymentData) throws PaymentException;
+	Status getPaymentStatus(PaymentData paymentData) throws PaymentException;
+
+	/**
+	 * Retrieves the amount paid in a transaction
+	 * @param paymentData
+	 * @return
+	 */
+	Double getPaymentTotal(PaymentData paymentData) throws PaymentException;
+
+	/**
+	 * Returns the link to view the payment/order in the payment service
+	 * @param paymentData
+	 * @return
+	 */
+	String getPaymentLink(PaymentData paymentData);
 }

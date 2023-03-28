@@ -40,28 +40,28 @@ public class Quilt {
  
 	@Id
     @GeneratedValue
-    private Long id;
+    Long id;
 
     @GeneratedValue(generator = "quilt-number-generator")
     @GenericGenerator(name = "quilt-number-generator",
     	strategy = "org.eihq.quiltshow.repository.QuiltNumberGenerator")
-    private Integer number;
+    Integer number;
 
 	@JsonIgnore
     @ManyToOne
     @EqualsAndHashCode.Exclude 
 	@ToString.Exclude
-	private Show show;
+	Show show;
 	
-    private String name;
+    String name;
     
 	@Column(length=5000)
-    private String description;
+    String description;
     
     @ManyToOne
     @EqualsAndHashCode.Exclude
 	@ToString.Exclude
-    private Category category;
+    Category category;
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
@@ -71,37 +71,37 @@ public class Quilt {
     @EqualsAndHashCode.Exclude
 	@ToString.Exclude
 	@JsonIncludeProperties({"id","name","description"})
-	private List<Tag> tags = new ArrayList<>();
+	List<Tag> tags = new ArrayList<>();
     
-    private Boolean presidentsChallenge;
-    private Boolean firstEntry;
+    Boolean presidentsChallenge;
+    Boolean firstEntry;
 
-    private Double length;
-    private Double width;
-    private Boolean firstShow;
-    private Boolean judged;
+    Double length;
+    Double width;
+    Boolean firstShow;
+    Boolean judged;
 
-    private GroupSize groupSize;
+    GroupSize groupSize;
     
-    private String mainColor;
+    String mainColor;
     
-    private int hangingPreference;
+    int hangingPreference;
     
     @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "design_source_id", referencedColumnName = "id")
-    private DesignSource designSource;
+    DesignSource designSource;
     
     @ManyToOne
     @EqualsAndHashCode.Exclude
 	@ToString.Exclude
-    private Person enteredBy;
+    Person enteredBy;
    
-    private String quiltedBy;
-    private String additionalQuilters;
+    String quiltedBy;
+    String additionalQuilters;
     
-    private LocalDateTime submittedOn = LocalDateTime.now();
+    LocalDateTime submittedOn = LocalDateTime.now();
     
-    private LocalDateTime lastUpdatedOn = LocalDateTime.now();
+    LocalDateTime lastUpdatedOn = LocalDateTime.now();
     
     
     @ManyToMany
@@ -111,12 +111,12 @@ public class Quilt {
     		inverseJoinColumns = @JoinColumn(name = "award_id"))
     @EqualsAndHashCode.Exclude
 	@ToString.Exclude
-    private Set<Award> awards = new HashSet<>();    
+    Set<Award> awards = new HashSet<>();    
     
     @ManyToOne
     @EqualsAndHashCode.Exclude
 	@ToString.Exclude
-    private PaymentData paymentData;
+    PaymentData paymentData;
     
 
     /**

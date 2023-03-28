@@ -35,6 +35,9 @@ public class SquarePaymentProcessingService implements PaymentProcessingService,
 	public static final DateTimeFormatter rfc3339Formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss[.SSS]XXX")
             .withResolverStyle(ResolverStyle.LENIENT);
 
+
+	private static final String SQUARE_ORDER_URL = "https://squareup.com/dashboard/sales/transactions";
+
 	
 	@Value("${payment.api.url:connect.squareup.com}")
 	String squareApiUrl;
@@ -101,22 +104,8 @@ public class SquarePaymentProcessingService implements PaymentProcessingService,
 		if(paymentData == null) {
 			return Status.ERROR;
 		}
-		
-		GetPaymentResponse paymentResponse = null;
-		try {
-			RetrieveOrderResponse orderResponse = ordersApi.retrieveOrder(paymentData.getOrderId());
-			
-			if((orderResponse.getOrder().getTenders() == null) || orderResponse.getOrder().getTenders().isEmpty()) {
-				log.trace("No tender submitted for order {}", paymentData.getOrderId());
-				return Status.ERROR;
-			}
-			
-			String paymentId = orderResponse.getOrder().getTenders().get(0).getPaymentId();
-			log.debug("Loading payment status for payment {}", paymentId);
-			paymentResponse = squareClient.getPaymentsApi().getPayment(paymentId);
-		} catch (ApiException | IOException e) {
-			throw new PaymentException(e.getMessage(), e);
-		}
+
+		GetPaymentResponse paymentResponse = getPaymentDetails(paymentData);
 		
 		if(paymentResponse == null) {
 			return Status.ERROR;
@@ -141,6 +130,47 @@ public class SquarePaymentProcessingService implements PaymentProcessingService,
 		}
 		
 		return Status.ERROR;
+	}
+	
+	@Override
+	public Double getPaymentTotal(PaymentData paymentData) throws PaymentException {
+		if(paymentData == null) {
+			throw new PaymentException("No payment data available");
+		}
+
+		GetPaymentResponse paymentResponse = getPaymentDetails(paymentData);
+		
+		if(paymentResponse == null) {
+			throw new PaymentException("Error fetching payment data from Square");
+		}
+
+		// return the total in USD
+		return paymentResponse.getPayment().getTotalMoney().getAmount() / 100.0;
+	}
+
+	@Override
+	public String getPaymentLink(PaymentData paymentData) {
+		return String.format("%s/%s", SQUARE_ORDER_URL, paymentData.getOrderId());
+	}
+	
+	protected GetPaymentResponse getPaymentDetails(PaymentData paymentData) throws PaymentException {
+		GetPaymentResponse paymentResponse = null;
+		try {
+			RetrieveOrderResponse orderResponse = ordersApi.retrieveOrder(paymentData.getOrderId());
+			
+			if((orderResponse.getOrder().getTenders() == null) || orderResponse.getOrder().getTenders().isEmpty()) {
+				log.trace("No tender submitted for order {}", paymentData.getOrderId());
+				return null;
+			}
+			
+			String paymentId = orderResponse.getOrder().getTenders().get(0).getPaymentId();
+			log.debug("Loading payment status for payment {}", paymentId);
+			paymentResponse = squareClient.getPaymentsApi().getPayment(paymentId);
+		} catch (ApiException | IOException e) {
+			throw new PaymentException(e.getMessage(), e);
+		}
+
+		return paymentResponse;
 	}
 	
 	protected CreatePaymentLinkRequest createPaymentLinkRequest(String name, String description, Double amount) {
