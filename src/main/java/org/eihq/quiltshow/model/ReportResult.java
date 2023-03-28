@@ -1,6 +1,7 @@
 package org.eihq.quiltshow.model;
 
 import java.util.List;
+import java.util.Map;
 
 import lombok.Data;
 
@@ -9,7 +10,7 @@ public class ReportResult {
 	
 	Report report;
 	
-	List<Quilt> results;
+	List<Map<String,Object>> results;
 	
 	boolean demo = false;
 

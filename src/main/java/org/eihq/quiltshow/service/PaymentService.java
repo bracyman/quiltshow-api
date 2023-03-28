@@ -133,7 +133,7 @@ public class PaymentService {
 	 * @return
 	 * @throws PaymentException 
 	 */
-	private boolean paymentSuccess(PaymentData paymentData) {
+	public boolean paymentSuccess(PaymentData paymentData) {
 		Status status;
 		try {
 			status = paymentProcessingService.getPaymentStatus(paymentData);
@@ -143,13 +143,24 @@ public class PaymentService {
 			return false;
 		}
 	}
+	
+	
+	/**
+	 * Fetches the total paid for the payment record
+	 * @param paymentData
+	 * @return
+	 * @throws PaymentException 
+	 */
+	public Double paymentAmount(PaymentData paymentData) throws PaymentException {
+		return paymentProcessingService.getPaymentTotal(paymentData);
+	}
 
 	/**
 	 * Returns the total price to register all of the quilts in the list
 	 * @param quilts
 	 * @return
 	 */
-	private double calculatePrice(List<Quilt> quilts) {
+	public double calculatePrice(List<Quilt> quilts) {
 		if((quilts == null) || quilts.isEmpty()) {
 			return 0.0;
 		}
@@ -172,7 +183,7 @@ public class PaymentService {
 	 * @param q
 	 * @return
 	 */
-	private Double quiltPrice(Quilt q) {
+	public Double quiltPrice(Quilt q) {
 		if(q == null) {
 			return 0.0;
 		}
@@ -199,6 +210,14 @@ public class PaymentService {
 				quilts.stream().map(q -> q.getEnteredBy().getFullName()).collect(Collectors.joining(",")),
 				quilts.size()
 			);
+	}
+
+	/**
+	 * Returns the link to view the payment/order in the payment service
+	 * @return
+	 */
+	public String getPaymentLink(PaymentData paymentData) {
+		return paymentProcessingService.getPaymentLink(paymentData);
 	}
 
 }
