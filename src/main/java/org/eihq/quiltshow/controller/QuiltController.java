@@ -119,7 +119,7 @@ public class QuiltController implements InitializingBean {
 	
 	private ResponseEntity<Quilt> createQuilt(Person user, Quilt quilt) throws URISyntaxException {
 		if(user != null) {			
-			resolveHangingPreference(user, quilt);
+			resolveHangingPreference(user, quilt, 0);
 
 			quilt.setNumber(nextQuiltNumber());
 			quilt.setEnteredBy(user);
@@ -141,7 +141,7 @@ public class QuiltController implements InitializingBean {
 		}
 		
 		Person user = personService.getUser(auth.getName());
-		resolveHangingPreference(user, currentQuilt);
+		resolveHangingPreference(user, quilt, currentQuilt.getHangingPreference());
 		
 		Quilt updatedQuilt = quiltRepository.save(quilt);
 		return ResponseEntity.ok(updatedQuilt);
@@ -202,23 +202,47 @@ public class QuiltController implements InitializingBean {
 	}
 	
 	
-	private void resolveHangingPreference(Person person, Quilt quilt) {		
+	private void resolveHangingPreference(Person person, Quilt quilt, int currentPreference) {
+		
+		// no need to do anything if there are no other entries
+		if(person.getEntered().isEmpty()) {
+			return;
+		}
+		
 		List<Quilt> quiltsByPreference = new LinkedList<>(person.getEntered());
 		quiltsByPreference.sort((a,b) -> (a.getHangingPreference() - b.getHangingPreference()));
+
+		int startUpdate = quilt.getHangingPreference();
+		int endUpdate = quiltsByPreference.get(quiltsByPreference.size() - 1).getHangingPreference();
+		int offset = 1;
 		
-		int offset = 0;
+		if(currentPreference == 0) {
+			startUpdate = quilt.getHangingPreference();
+		}
+		else {
+			startUpdate = Math.min(currentPreference, quilt.getHangingPreference());
+			endUpdate = Math.max(currentPreference, quilt.getHangingPreference());
+			offset = (currentPreference > quilt.getHangingPreference()) ? 1 : -1; 
+		}
+		
+		boolean useOffset = false;
+		boolean updated = false;
 		for(int i = 0; i < quiltsByPreference.size(); i++) {
 			Quilt current = quiltsByPreference.get(i);
 			if(current.getId() != quilt.getId()) {
-				if(current.getHangingPreference() == quilt.getHangingPreference()) {
-					offset++;
+				if((current.getHangingPreference() >= startUpdate) && (current.getHangingPreference() <= endUpdate)) {
+					useOffset = true;
+					updated = true;
+				}
+				else {
+					useOffset = false;
 				}
 				
-				current.setHangingPreference(current.getHangingPreference() + offset);
+				current.setHangingPreference(current.getHangingPreference() + (useOffset ? offset : 0));
 			}
 		}
 		
-		if(offset > 0) {
+		if(updated) {
 			quiltRepository.saveAll(quiltsByPreference);
 		}
 	}
