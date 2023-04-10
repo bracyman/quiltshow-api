@@ -2,16 +2,21 @@ package org.eihq.quiltshow.model;
 
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import javax.persistence.Convert;
+
+import org.eihq.quiltshow.repository.StringListConverter;
 import org.springframework.util.StringUtils;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 @AllArgsConstructor
@@ -43,11 +48,15 @@ public class SearchField implements Serializable {
 		    return null;
 		}
 	}
+
 	
 	String matches;
 	MatchType matchType;
-
 	
+    @Convert(converter = StringListConverter.class)
+	List<String> categories;
+
+		
 	@JsonIgnore
 	public boolean isEmpty() {
 		return !StringUtils.hasText(getMatches());

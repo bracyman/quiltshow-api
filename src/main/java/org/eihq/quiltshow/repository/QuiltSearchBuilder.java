@@ -58,24 +58,24 @@ public class QuiltSearchBuilder {
 		Root<Quilt> quiltRoot = query.from(Quilt.class);
 
 		List<Predicate> predicates = new ArrayList<>();
-		addPredicate(predicates, fieldMatchesString(cb, quiltRoot.get("name"), new SearchField(searchText, MatchType.CONTAINS)));
-		addPredicate(predicates, fieldMatchesString(cb, quiltRoot.get("description"), new SearchField(searchText, MatchType.CONTAINS)));
-		addPredicate(predicates, fieldMatchesPerson(cb, quiltRoot.get("enteredBy"), new SearchField(searchText, MatchType.CONTAINS)));
-		addPredicate(predicates, fieldMatchesString(cb, quiltRoot.get("additionalQuilters"), new SearchField(searchText, MatchType.CONTAINS)));
+		addPredicate(predicates, fieldMatchesString(cb, quiltRoot.get("name"), new SearchField(searchText, MatchType.CONTAINS, null)));
+		addPredicate(predicates, fieldMatchesString(cb, quiltRoot.get("description"), new SearchField(searchText, MatchType.CONTAINS, null)));
+		addPredicate(predicates, fieldMatchesPerson(cb, quiltRoot.get("enteredBy"), new SearchField(searchText, MatchType.CONTAINS, null)));
+		addPredicate(predicates, fieldMatchesString(cb, quiltRoot.get("additionalQuilters"), new SearchField(searchText, MatchType.CONTAINS, null)));
 
 		query
-			.select(quiltRoot)
-			.where(cb.or(predicates.toArray(new Predicate[predicates.size()])));
-		
+		.select(quiltRoot)
+		.where(cb.or(predicates.toArray(new Predicate[predicates.size()])));
+
 		query.orderBy(Arrays.asList("enteredBy", "name", "description", "additionalQuilters").stream().map(o -> sortField(cb, quiltRoot, o)).collect(Collectors.toList()));
-	
+
 		return entityManager.createQuery(query);
 	}
 
-	
+
 	public TypedQuery<Quilt> buildSearch(Report report) {
 
-		
+
 		// 		addPredicate(predicates, fieldMatchesString(cb, quiltRoot.get("designSourceTypes"), search.getDesignSourceTypes()));
 		//		addPredicate(predicates, fieldMatchesString(cb, quiltRoot.get("designSourceName"), search.getDesignSourceName()));
 
@@ -83,6 +83,42 @@ public class QuiltSearchBuilder {
 		CriteriaQuery<Quilt> query = cb.createQuery(Quilt.class);
 		Root<Quilt> quiltRoot = query.from(Quilt.class);
 
+		query
+		.select(quiltRoot)
+		.where(cb.and(buildSearchCriteria(cb, quiltRoot, query, report)));
+
+		query.orderBy(report.getSortOrder().stream().map(o -> sortField(cb, quiltRoot, o)).collect(Collectors.toList()));
+
+		return entityManager.createQuery(query);
+	}
+
+
+	public TypedQuery<Object[]> buildCountSearch(Report report) {
+
+		CriteriaBuilder criteriaBuilder = entityManager.getCriteriaBuilder();
+		CriteriaQuery<Object[]> query = criteriaBuilder.createQuery(Object[].class);
+		Root<Quilt> quiltRoot = query.from(Quilt.class);
+
+		query.groupBy(report.getFields().stream()
+				.filter(f -> !"count".equalsIgnoreCase(f))
+				.map(f -> quiltRoot.get(f))
+				.collect(Collectors.toList())
+				);
+
+		query.multiselect(report.getFields().stream()
+				.map(f -> "count".equalsIgnoreCase(f) ? criteriaBuilder.count(quiltRoot) : quiltRoot.get(f))
+				.collect(Collectors.toList())
+				);
+		
+		query.where(criteriaBuilder.and(buildSearchCriteria(criteriaBuilder, quiltRoot, query, report)));
+
+		TypedQuery<Object[]> typedQuery = entityManager.createQuery(query);
+
+		return typedQuery;
+	}
+
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	private Predicate[] buildSearchCriteria(CriteriaBuilder cb, Root<Quilt> quiltRoot, CriteriaQuery query, Report report) {
 		List<Predicate> predicates = new ArrayList<>();
 		addPredicate(predicates, fieldMatchesString(cb, quiltRoot.get("name"), report.getName()));
 		addPredicate(predicates, fieldMatchesNumber(cb, quiltRoot.get("number"), report.getNumber()));
@@ -90,7 +126,7 @@ public class QuiltSearchBuilder {
 		addPredicate(predicates, fieldMatchesNumber(cb, quiltRoot.get("length"), report.getLength()));
 		addPredicate(predicates, fieldMatchesNumber(cb, quiltRoot.get("width"), report.getWidth()));
 		addPredicate(predicates, fieldMatchesBoolean(cb, quiltRoot.get("judged"), report.getJudged()));
-		addPredicate(predicates, fieldMatchesBoolean(cb, quiltRoot.get("firstShow"), report.getFirstShow()));
+		addPredicate(predicates, fieldMatchesBoolean(cb, quiltRoot.get("firstShow"), report.getFirstEntry()));
 		addPredicate(predicates, fieldMatchesString(cb, quiltRoot.get("mainColor"), report.getMainColor()));
 		addPredicate(predicates, fieldMatchesNumber(cb, quiltRoot.get("hangingPreference"), report.getHangingPreference()));
 		addPredicate(predicates, fieldMatchesString(cb, quiltRoot.get("mainColor"), report.getMainColor()));
@@ -98,14 +134,8 @@ public class QuiltSearchBuilder {
 		addPredicate(predicates, fieldMatchesCategories(cb, quiltRoot.get("category"), report.getCategory()));
 		addPredicate(predicates, fieldMatchesTags(query, quiltRoot, cb, quiltRoot.get("tags"), report.getTags()));
 		addPredicate(predicates, fieldMatchesGroupSize(cb, quiltRoot.get("groupSize"), report.getGroupSize()));
-		
-		query
-			.select(quiltRoot)
-			.where(cb.and(predicates.toArray(new Predicate[predicates.size()])));
-		
-		query.orderBy(report.getSortOrder().stream().map(o -> sortField(cb, quiltRoot, o)).collect(Collectors.toList()));
 
-		return entityManager.createQuery(query);
+		return predicates.toArray(new Predicate[predicates.size()]);
 	}
 
 	private void addPredicate(List<Predicate> predicates, Predicate p) {
@@ -243,7 +273,7 @@ public class QuiltSearchBuilder {
 		return sizes.stream().map(s -> GroupSize.from(s)).collect(Collectors.toList());
 	}
 
-	
+
 	private List<Category> categoryList(List<Long> ids) {
 		return ids.stream().map(id -> {
 			Category c = new Category();
@@ -281,30 +311,30 @@ public class QuiltSearchBuilder {
 			if(f.getType().equals(String.class)) {
 				return cb.asc(cb.upper(quiltRoot.get(field)));
 			}
-			
+
 			if(Number.class.isAssignableFrom(f.getType()) 
 					|| Boolean.class.equals(f.getType())) {
 				return cb.asc(quiltRoot.get(field));
 			}
-			
+
 			if(Category.class.equals(f.getType())) {
 				Path<Category> path = quiltRoot.get(field);
 				return cb.asc(cb.upper(path.get("name")));
 			}
-			
+
 			if(Person.class.equals(f.getType())) {
 				Path<Person> path = quiltRoot.get(field);
 				Path<String> lastName = path.get("lastName");
 				return cb.asc(cb.upper(lastName));
 			}
-			
+
 		} catch (NoSuchFieldException | SecurityException e) {
 			// use the default sort instead
 		}
-		
+
 		// default to standard sort on the date entered
 		return cb.asc(quiltRoot.get("submittedOn"));
 	}
-	
+
 	//*/
 }

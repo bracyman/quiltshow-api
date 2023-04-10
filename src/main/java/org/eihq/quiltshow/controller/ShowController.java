@@ -376,7 +376,7 @@ public class ShowController implements InitializingBean {
 	
 			createDefaultAwards();
 			
-			createDefaultQuilt();
+			//createDefaultQuilt();
 		}
 	}
 
