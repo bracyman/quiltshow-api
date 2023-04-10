@@ -41,6 +41,8 @@ public class Report {
     
     ReportCategory reportCategory = ReportCategory.MISCELLANEOUS;
     Boolean favorite = Boolean.FALSE;
+    private String format = null;
+    private String groupField = null;
     
 
 	private SearchField number = null;
@@ -57,7 +59,9 @@ public class Report {
 	
 	private SearchField width = null;
 
-	private SearchField firstShow = null;
+	private SearchField presidentsChallenge = null;
+
+	private SearchField firstEntry = null;
 	
 	private SearchField judged = null;
 

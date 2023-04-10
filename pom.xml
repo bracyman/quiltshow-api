@@ -22,6 +22,9 @@
 		<profile>
 			<id>local-only</id>
 		</profile>
+		<profile>
+			<id>test</id>
+		</profile>
 	</profiles>
 	<dependencies>
 		<dependency>

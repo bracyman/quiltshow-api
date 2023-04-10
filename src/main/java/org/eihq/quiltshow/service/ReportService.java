@@ -127,29 +127,59 @@ public class ReportService {
 	}
 
 	public ReportResult runReport(Report report) {
-		List<Quilt> quilts = quiltSearchBuilder.buildSearch(report).getResultList();
-
 		ReportResult result = new ReportResult();
 		result.setReport(report);
-		
-		List<Map<String, Object>> searchResults = new LinkedList<>();
-		quilts.forEach(q -> {
-			Map<String, Object> searchResult = new HashMap<>();
-			report.getFields().forEach(f -> {
-				try {
-					Field field = Quilt.class.getDeclaredField(f);
-					field.setAccessible(true);
-					searchResult.put(f, field.get(q));
-				} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
-					searchResult.put(f, null);
+
+		// if the report counts quilts, run the count search
+		if(report.getFields().contains("count")) {
+			List<Object[]> results = quiltSearchBuilder.buildCountSearch(report).getResultList();
+			
+			List<Map<String, Object>> mappedResults = new LinkedList<>();
+			results.forEach(r -> {
+				Map<String, Object> mappedResult = new HashMap<>();
+				for(int i=0; i < report.getFields().size(); i++) {
+					mappedResult.put(report.getFields().get(i), r[i]);
 				}
+				mappedResults.add(mappedResult);
 			});
-			searchResults.add(searchResult);
-		});
-		
-		
-		result.setResults(searchResults);
+			
+			result.setResults(mappedResults);
+		}
+		// otherwise run a quilt search
+		else {
+			List<Quilt> quilts = quiltSearchBuilder.buildSearch(report).getResultList();
+	
+			List<Map<String, Object>> searchResults = new LinkedList<>();
+			quilts.forEach(q -> {
+				Map<String, Object> searchResult = new HashMap<>();
+				report.getFields().forEach(f -> {
+					try {
+						Field field = Quilt.class.getDeclaredField(f);
+						field.setAccessible(true);
+						searchResult.put(f, field.get(q));
+					} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+						searchResult.put(f, null);
+					}
+				});
+				
+				// include the grouping field for grouping reports
+				if(report.getGroupField() != null) {
+					try {
+						Field field = Quilt.class.getDeclaredField(report.getGroupField());
+						field.setAccessible(true);
+						searchResult.put(report.getGroupField(), field.get(q));
+					} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+						searchResult.put(report.getGroupField(), null);
+					}
+				}
+				searchResults.add(searchResult);
+			});
+			
+			
+			result.setResults(searchResults);
+		}
 
 		return result;	
 	}
+
 }

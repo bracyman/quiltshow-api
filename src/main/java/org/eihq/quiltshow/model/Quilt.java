@@ -118,6 +118,12 @@ public class Quilt {
 	@ToString.Exclude
     PaymentData paymentData;
     
+    @ManyToOne
+    @EqualsAndHashCode.Exclude
+	@ToString.Exclude
+    HangingLocation hangingLocation;
+    
+    
 
     /**
      * Calculates the surface area of the quilt
