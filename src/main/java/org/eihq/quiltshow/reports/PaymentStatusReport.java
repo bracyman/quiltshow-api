@@ -24,6 +24,8 @@ public class PaymentStatusReport extends Report {
 
 	public static final Long ID = -10l;
 	
+	private static final PaymentStatusReport _singleton = new PaymentStatusReport();
+	
 	private static final String ENTRANT = "Entrant";
 	private static final String ENTRIES = "Entry Count";
 	private static final String TOTAL_DUE = "Total";
@@ -34,8 +36,12 @@ public class PaymentStatusReport extends Report {
 	PaymentService paymentService;
 	
 	
-	public PaymentStatusReport() {
+	private PaymentStatusReport() {
 
+	}
+
+	public static PaymentStatusReport instance() {
+		return _singleton;
 	}
 
 
@@ -53,6 +59,11 @@ public class PaymentStatusReport extends Report {
 	@Override
 	public ReportCategory getReportCategory() {
 		return ReportCategory.MISCELLANEOUS;
+	}
+	
+	@Override
+	public String getFormat() {
+		return "payment_status";
 	}
 
 

@@ -53,7 +53,9 @@ public class ReportService {
 	 * @return
 	 */
 	public List<Report> getReports() {
-		return reportRepository.findAll();
+		List<Report> reports = new LinkedList<>(reportRepository.findAll());
+		reports.add(PaymentStatusReport.instance());
+		return reports;
 	}
 
 
@@ -68,7 +70,7 @@ public class ReportService {
 		}
 
 		if(id.equals(PaymentStatusReport.ID)) {
-			return new PaymentStatusReport();
+			return PaymentStatusReport.instance();
 		}
 
 		return reportRepository.findById(id).orElseThrow(() -> new NotFoundException("Report", id));
