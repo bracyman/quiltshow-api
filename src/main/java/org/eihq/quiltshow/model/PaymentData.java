@@ -32,6 +32,8 @@ public class PaymentData {
 	
 	String description;
 	
+	Double amount;
+	
 	String paymentProcessorId;
 	
 	String orderId;

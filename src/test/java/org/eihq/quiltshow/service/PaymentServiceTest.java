@@ -98,7 +98,7 @@ public class PaymentServiceTest {
 		
 		Double due = service.amountDue(p);
 		assertNotNull(due);
-		assertEquals(6.0, due.doubleValue(), 0.0);
+		assertEquals(5.0, due.doubleValue(), 0.0);
 
 		q = new Quilt();
 		q.setJudged(false);
@@ -106,10 +106,32 @@ public class PaymentServiceTest {
 		
 		due = service.amountDue(p);
 		assertNotNull(due);
-		assertEquals(11.0, due.doubleValue(), 0.0);
+		assertEquals(10.0, due.doubleValue(), 0.0);
 
 	}
 	
+	
+	@Test
+	void amountDueWithOverhead_shouldReturnLowerPrice_whenQuiltNotJudged() {
+		Person p = new Person();
+		Quilt q = new Quilt();
+		q.setJudged(false);
+		p.addQuilt(q);
+		
+		Double due = service.amountDueWithOverhead(p);
+		assertNotNull(due);
+		assertEquals(6.0, due.doubleValue(), 0.0);
+
+		q = new Quilt();
+		q.setJudged(false);
+		p.addQuilt(q);
+		
+		due = service.amountDueWithOverhead(p);
+		assertNotNull(due);
+		assertEquals(11.0, due.doubleValue(), 0.0);
+
+	}
+
 	
 	@Test
 	void amountDue_shouldReturnHigherPrice_whenQuiltJudged() {
@@ -120,13 +142,34 @@ public class PaymentServiceTest {
 		
 		Double due = service.amountDue(p);
 		assertNotNull(due);
-		assertEquals(11.0, due.doubleValue(), 0.0);
+		assertEquals(10.0, due.doubleValue(), 0.0);
 
 		q = new Quilt();
 		q.setJudged(true);
 		p.addQuilt(q);
 		
 		due = service.amountDue(p);
+		assertNotNull(due);
+		assertEquals(20.0, due.doubleValue(), 0.0);
+	}
+	
+	
+	@Test
+	void amountDueWithOverhead_shouldReturnHigherPrice_whenQuiltJudged() {
+		Person p = new Person();
+		Quilt q = new Quilt();
+		q.setJudged(true);
+		p.addQuilt(q);
+		
+		Double due = service.amountDueWithOverhead(p);
+		assertNotNull(due);
+		assertEquals(11.0, due.doubleValue(), 0.0);
+
+		q = new Quilt();
+		q.setJudged(true);
+		p.addQuilt(q);
+		
+		due = service.amountDueWithOverhead(p);
 		assertNotNull(due);
 		assertEquals(21.0, due.doubleValue(), 0.0);
 	}
@@ -159,6 +202,37 @@ public class PaymentServiceTest {
 		// if correct, we'll get(ceil(.3 + 1.029 * (10 + 10 + 5 + 5 + 10))
 		Double due = service.amountDue(p);
 		assertNotNull(due);
+		assertEquals(40.0, due.doubleValue(), 0.0);
+	}
+	
+	
+	@Test
+	void amountDueWithOverhead_shouldCalculateSquareMarkup_afterSubtotal() {
+		Person p = new Person();
+		Quilt q = new Quilt();
+		q.setJudged(true);
+		p.addQuilt(q);
+		
+		q = new Quilt();
+		q.setJudged(true);
+		p.addQuilt(q);
+		
+		q = new Quilt();
+		q.setJudged(false);
+		p.addQuilt(q);
+		
+		q = new Quilt();
+		q.setJudged(false);
+		p.addQuilt(q);
+		
+		q = new Quilt();
+		q.setJudged(true);
+		p.addQuilt(q);
+		
+		// if incorrect, we'll get ceil(10.59 + 10.59 + 5.45 + 5.45 + 10.59)
+		// if correct, we'll get(ceil(.3 + 1.029 * (10 + 10 + 5 + 5 + 10))
+		Double due = service.amountDueWithOverhead(p);
+		assertNotNull(due);
 		assertEquals(42.0, due.doubleValue(), 0.0);
 	}
 	
@@ -190,6 +264,38 @@ public class PaymentServiceTest {
 		p.addQuilt(q);
 		
 		Double due = service.amountDue(p);
+		assertNotNull(due);
+		assertEquals(10.0, due.doubleValue(), 0.0);
+	}
+	
+	
+	@Test
+	void amountDueWithOverhead_shouldIgnoreQuilts_alreadyPaid() throws PaymentException {
+		when(paymentProcessingService.getPaymentStatus(any(PaymentData.class))).then(new Answer<Status>(){
+
+			@Override
+			public Status answer(InvocationOnMock invocation) throws Throwable {
+				PaymentData arg = invocation.getArgument(0, PaymentData.class);
+				if(arg == null) {
+					return Status.STARTED;
+				}
+				return arg.getStatus();
+			}
+			
+		});
+		Person p = new Person();
+		Quilt q = new Quilt();
+		q.setJudged(true);
+		p.addQuilt(q);
+		
+		q = new Quilt();
+		q.setJudged(true);
+		q.setPaymentData(new PaymentData());
+		q.getPaymentData().setId(100l);
+		q.getPaymentData().setStatus(Status.VERIFIED);
+		p.addQuilt(q);
+		
+		Double due = service.amountDueWithOverhead(p);
 		assertNotNull(due);
 		assertEquals(11.0, due.doubleValue(), 0.0);
 	}

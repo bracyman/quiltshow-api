@@ -1,39 +1,48 @@
 package org.eihq.quiltshow.model;
 
-import java.util.List;
-
 import javax.persistence.Entity;
-import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.ManyToOne;
-import javax.persistence.OneToMany;
+import javax.persistence.OneToOne;
 import javax.persistence.Table;
-
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import javax.persistence.Transient;
 
 import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
+import lombok.NoArgsConstructor;
 
 @Data
-@Entity()
-@Table(name = "hangingLocations")
+@NoArgsConstructor
+@Entity
+@Table(name = "hanging_locations")
 public class HangingLocation {
 	
-	 
-		@Id
-	    @GeneratedValue
-	    Long id;
+	@Id
+    @GeneratedValue
+    Long id;
 
-		@JsonIgnore
-	    @ManyToOne
-	    @EqualsAndHashCode.Exclude 
-		@ToString.Exclude
-		Show show;
-		
-	    String name;
-	    
-	    @OneToMany(mappedBy = "hangingLocation", fetch = FetchType.EAGER)
-	    List<Quilt> quilts;
+	Double leftPosition = 0.0;
+	
+	Double topPosition = 0.0;
+	
+	@ManyToOne
+	Wall wall;
+	
+	@OneToOne
+	Quilt quilt;
+	
+	@Transient
+	public Double getHeight() {
+		return (getQuilt() == null) ? 0.0 : getQuilt().getLength();
+	}
+	
+	@Transient
+	public Double getWidth() {
+		return (getQuilt() == null) ? 0.0 : getQuilt().getWidth();
+	}
+	
+	@Transient
+	public String getName() {
+		return wall.getName();
+	}
 }

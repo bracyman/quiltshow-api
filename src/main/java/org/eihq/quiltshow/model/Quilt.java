@@ -117,10 +117,8 @@ public class Quilt {
     @EqualsAndHashCode.Exclude
 	@ToString.Exclude
     PaymentData paymentData;
-    
-    @ManyToOne
-    @EqualsAndHashCode.Exclude
-	@ToString.Exclude
+
+    @OneToOne
     HangingLocation hangingLocation;
     
     

@@ -29,6 +29,7 @@ public class PaymentStatusReport extends Report {
 	private static final String ENTRANT = "Entrant";
 	private static final String ENTRIES = "Entry Count";
 	private static final String TOTAL_DUE = "Total";
+	private static final String TOTAL_DUE_WITH_OVERHEAD = "Total With Overhead";
 	private static final String TOTAL_PAID = "Paid";
 	private static final String PAYMENT_DATES = "Payment Date(s)";
 	private static final String PAYMENTS = "Payment Links";
@@ -75,7 +76,7 @@ public class PaymentStatusReport extends Report {
 
 	@Override
 	public List<String> getFields() {
-		return Arrays.asList(ENTRANT, ENTRIES, TOTAL_DUE, TOTAL_PAID, PAYMENT_DATES, PAYMENTS);
+		return Arrays.asList(ENTRANT, ENTRIES, TOTAL_DUE, TOTAL_DUE_WITH_OVERHEAD, TOTAL_PAID, PAYMENT_DATES, PAYMENTS);
 	}
 	
 	
@@ -93,6 +94,7 @@ public class PaymentStatusReport extends Report {
 				row.put(ENTRANT, person.getFullName());
 				row.put(ENTRIES, person.getEntered().size());
 				row.put(TOTAL_DUE, paymentService.calculatePrice(person.getEntered()));
+				row.put(TOTAL_DUE_WITH_OVERHEAD, paymentService.calculatePriceWithOverhead(person.getEntered()));
 				
 				try {
 					row.put(TOTAL_PAID, calculateAmountPaid(person, paymentService));
@@ -143,7 +145,10 @@ public class PaymentStatusReport extends Report {
 		
 		for(PaymentData payment : payments) {
 			if(paymentService.paymentSuccess(payment)) {
-				links.add(paymentService.getPaymentLink(payment));	
+				String link = paymentService.getPaymentLink(payment);
+				if(link != null) {
+					links.add(link);
+				}
 			}
 		}
 		

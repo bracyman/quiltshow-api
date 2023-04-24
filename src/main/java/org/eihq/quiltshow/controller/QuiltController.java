@@ -3,8 +3,10 @@ package org.eihq.quiltshow.controller;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 
 import org.eihq.quiltshow.configuration.UserRoles;
 import org.eihq.quiltshow.exception.PaymentException;
@@ -18,6 +20,7 @@ import org.eihq.quiltshow.service.PersonService;
 import org.eihq.quiltshow.service.UserAuthentication;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -67,7 +70,7 @@ public class QuiltController implements InitializingBean {
 		boolean onlyPersonal = (personal != null) && "true".equalsIgnoreCase(personal);
 		
 		if(!onlyPersonal && userAuthentication.hasRole(UserRoles.ROLE_ADMIN)) {
-			return quiltRepository.findAll();
+			return getAllQuilts(auth);
 		}
 		
 		Person user = personService.getUser(email);
@@ -81,7 +84,20 @@ public class QuiltController implements InitializingBean {
 
 	@GetMapping("/all")
 	public List<Quilt> getAllQuilts(Authentication auth) {
-		return quiltRepository.findAll();
+		if(userAuthentication.hasRole(UserRoles.ROLE_ADMIN)) {
+			List<Quilt> allQuilts = quiltRepository.findAll();
+			Set<PaymentData> payments = new HashSet<>();
+			allQuilts.forEach(q -> {
+				if((q.getPaymentData() != null) && paymentService.paymentInProgress(q.getPaymentData())) {
+					payments.add(q.getPaymentData());
+				}
+			});
+			
+			paymentService.updateStatus(payments);
+			return allQuilts;
+		}
+		
+		return Collections.emptyList();
 	}	
 
 	@PostMapping("/search/{searchText}")
@@ -185,6 +201,17 @@ public class QuiltController implements InitializingBean {
 			log.error("Error fetching amount due for " + user.getEmail(), e);
 			return ResponseEntity.internalServerError().body("Error encountered creating order: " + e.getMessage());
 		}		
+	}
+	
+	@PostMapping("/external-pay")
+	public ResponseEntity<String> noteExternalQuiltPayment(Authentication auth, @RequestBody List<Long> quiltIds) {
+		if(!userAuthentication.hasRole(UserRoles.ROLE_ADMIN)) {
+			return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Insufficient permission");
+		}
+
+		paymentService.createExternalPaymentNote(quiltIds, auth.getName());
+		
+		return ResponseEntity.ok("External payment stored");
 	}
 
 	
