@@ -135,7 +135,7 @@ public class QuiltController implements InitializingBean {
 	
 	private ResponseEntity<Quilt> createQuilt(Person user, Quilt quilt) throws URISyntaxException {
 		if(user != null) {			
-			resolveHangingPreference(user, quilt, 0);
+			//resolveHangingPreference(user, quilt, 0);
 
 			quilt.setNumber(nextQuiltNumber());
 			quilt.setEnteredBy(user);
@@ -157,7 +157,7 @@ public class QuiltController implements InitializingBean {
 		}
 		
 		Person user = personService.getUser(auth.getName());
-		resolveHangingPreference(user, quilt, currentQuilt.getHangingPreference());
+		//resolveHangingPreference(user, quilt, currentQuilt.getHangingPreference());
 		
 		Quilt updatedQuilt = quiltRepository.save(quilt);
 		return ResponseEntity.ok(updatedQuilt);
@@ -228,7 +228,7 @@ public class QuiltController implements InitializingBean {
 		nextQuiltNumber = (currentLastQuiltNumber == null) ? STARTING_QUILT_NUMBER : (currentLastQuiltNumber + 1);
 	}
 	
-	
+	/*
 	private void resolveHangingPreference(Person person, Quilt quilt, int currentPreference) {
 		
 		// no need to do anything if there are no other entries
@@ -273,6 +273,7 @@ public class QuiltController implements InitializingBean {
 			quiltRepository.saveAll(quiltsByPreference);
 		}
 	}
+	*/
 }
 
 @Data
