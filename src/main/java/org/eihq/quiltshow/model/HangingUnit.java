@@ -16,24 +16,32 @@ import javax.persistence.Transient;
 
 import org.eihq.quiltshow.repository.MeasurementMapConverter;
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
 @Entity
 @Table(name = "hanging_units")
+@EqualsAndHashCode
+@JsonIdentityInfo(
+		  generator = ObjectIdGenerators.PropertyGenerator.class, 
+		  property = "id")
 public class HangingUnit {
 	public static final double DEFAULT_HEIGHT = 10.0;
 	
 	
 	public static enum Types {
-		SINGLE_SIDE_WALL,
-		DOUBLE_SIDE_WALL,
-		SINGLE_BOOTH,
-		DOUBLE_BOOTH
+		WALL,
+		UBOOTH,
+		HBOOTH,
+		BLOCK,
+		DOOR
 	};
 
 	
@@ -42,24 +50,21 @@ public class HangingUnit {
     Long id;
 
 	Types unitType;
-	
-	double leftPosition;
-	
-	double topPosition;
-	
-	double height = DEFAULT_HEIGHT;
-	
-	double angle;
-	
+		
 	String name;
 	
-	@OneToMany(mappedBy = "hangingUnit", cascade = CascadeType.ALL)
-	List<Wall> walls;
+	@Convert(converter = MeasurementMapConverter.class)
+	Map<String, Double> location;
 	
 	@Convert(converter = MeasurementMapConverter.class)
-	Map<String, Double> measurements;
+	Map<String, Double> size;
+
+	@OneToMany(mappedBy = "hangingUnit", cascade = CascadeType.ALL)
+	@EqualsAndHashCode.Exclude
+	List<Wall> walls;
 	
 	@ManyToOne
+	@EqualsAndHashCode.Exclude
 	Room room;
 	
 	
@@ -77,63 +82,45 @@ public class HangingUnit {
 		setWalls(new LinkedList<>());
 		
 		switch(getUnitType()) {
-		case SINGLE_SIDE_WALL:
-			
+		case WALL:
+			getWalls().add(wall("A", getSize().get("length"), getSize().get("height")));
+			getWalls().add(wall("B", getSize().get("length"), getSize().get("height")));
 			break;
 			
-		case DOUBLE_SIDE_WALL:
+		case UBOOTH:
+			getWalls().add(wall("A", getSize().get("depth"), getSize().get("height")));
+			getWalls().add(wall("B", getSize().get("width"), getSize().get("height")));
+			getWalls().add(wall("C", getSize().get("depth"), getSize().get("height")));
+			getWalls().add(wall("OA", getSize().get("depth"), getSize().get("height")));
+			getWalls().add(wall("OB", getSize().get("width"), getSize().get("height")));
+			getWalls().add(wall("OC", getSize().get("depth"), getSize().get("height")));
 			break;
 			
-		case SINGLE_BOOTH:
+		case HBOOTH:
+			getWalls().add(wall("A", getSize().get("upperDepth"), getSize().get("height")));
+			getWalls().add(wall("B", getSize().get("width"), getSize().get("height")));
+			getWalls().add(wall("C", getSize().get("upperDepth"), getSize().get("height")));
+			getWalls().add(wall("D", getSize().get("lowerDepth"), getSize().get("height")));
+			getWalls().add(wall("E", getSize().get("width"), getSize().get("height")));
+			getWalls().add(wall("F", getSize().get("lowerDepth"), getSize().get("height")));
+			getWalls().add(wall("OA", getSize().get("upperDepth") + getSize().get("lowerDepth"), getSize().get("height")));
+			getWalls().add(wall("OC", getSize().get("upperDepth") + getSize().get("lowerDepth"), getSize().get("height")));
 			break;
 			
-		case DOUBLE_BOOTH:
-			break;
-			
+		case BLOCK:
+		case DOOR:			
 		default:
-			break;
+			// these units have no hangable surfaces
 		}
 	}
 	
-	@Transient
-	public Double getWidth() {
-		switch(getUnitType()) {
-		case SINGLE_SIDE_WALL:
-			
-			return 0.0;
-			
-		case DOUBLE_SIDE_WALL:
-			return 0.0;
-			
-		case SINGLE_BOOTH:
-			return 0.0;
-			
-		case DOUBLE_BOOTH:
-			return 0.0;
-			
-		default:
-			return 0.0;
-		}
-	}
-	
-	
-	@Transient
-	public Double getHeight() {
-		switch(getUnitType()) {
-		case SINGLE_SIDE_WALL:
-			return 0.0;
-			
-		case DOUBLE_SIDE_WALL:
-			return 0.0;
-			
-		case SINGLE_BOOTH:
-			return 0.0;
-			
-		case DOUBLE_BOOTH:
-			return 0.0;
-			
-		default:
-			return 0.0;
-		}
+	private Wall wall(String name, Double width, Double height) {
+		Wall wall = new Wall();
+		wall.setWidth(width);
+		wall.setHeight(height == null ? DEFAULT_HEIGHT : height);
+		wall.setName(name);
+		wall.setHangingUnit(this);
+		
+		return wall;
 	}
 }

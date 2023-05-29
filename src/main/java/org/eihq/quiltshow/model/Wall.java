@@ -1,7 +1,9 @@
 package org.eihq.quiltshow.model;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import javax.persistence.CascadeType;
@@ -13,15 +15,22 @@ import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import javax.persistence.Transient;
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
 @Entity
 @Table(name = "walls")
+@EqualsAndHashCode
+@JsonIdentityInfo(
+		  generator = ObjectIdGenerators.PropertyGenerator.class, 
+		  property = "id")
 public class Wall {
 
 	@Id
@@ -35,12 +44,15 @@ public class Wall {
 	Double height;
 	
 	@OneToMany(mappedBy = "wall", cascade = CascadeType.ALL)
+	@EqualsAndHashCode.Exclude
 	List<HangingLocation> hangingLocations;
 	
 	@ManyToOne
+	@EqualsAndHashCode.Exclude
 	HangingUnit hangingUnit;
 	
 	
+
 	@JsonIgnore
 	@Transient
 	public List<Quilt> getQuilts() {
@@ -53,9 +65,13 @@ public class Wall {
 	
 	public HangingLocation addQuilt(Quilt quilt, Double leftPosition, Double topPosition) {
 		HangingLocation hangingLocation = new HangingLocation();
-		hangingLocation.setLeftPosition(leftPosition);
-		hangingLocation.setTopPosition(topPosition);
+		
+		Map<String, Double> location = new HashMap<>();
+		location.put("left", leftPosition);
+		location.put("top", topPosition);
+		hangingLocation.setLocation(location);
 		hangingLocation.setQuilt(quilt);
+		hangingLocation.setWall(this);
 		
 		getHangingLocations().add(hangingLocation);
 		return hangingLocation;
@@ -65,7 +81,6 @@ public class Wall {
 		HangingLocation hangingLocation = hangingLocations.stream().filter(hl -> quilt.getId().equals(hl.getQuilt().getId())).findFirst().orElse(null);
 		
 		if(hangingLocation != null) {
-			hangingLocation.getQuilt().setHangingLocation(null);
 			hangingLocation.setQuilt(null);
 			getHangingLocations().remove(hangingLocation);
 		}
@@ -74,10 +89,6 @@ public class Wall {
 	}
 	
 	public void clearWall() {
-		hangingLocations.forEach(hl -> {
-			hl.getQuilt().setHangingLocation(null);
-		});
-		
 		hangingLocations.clear();
 	}
 }

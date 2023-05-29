@@ -11,13 +11,21 @@ import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
+
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
 @Entity
 @Table(name = "rooms")
+@EqualsAndHashCode
+@JsonIdentityInfo(
+		  generator = ObjectIdGenerators.PropertyGenerator.class, 
+		  property = "id")
 public class Room {
 	
 	@Id
@@ -27,6 +35,7 @@ public class Room {
 	String name;
 	
 	@ManyToOne
+	@EqualsAndHashCode.Exclude
 	Show show;
 	
 	Boolean active = Boolean.FALSE;
@@ -38,5 +47,6 @@ public class Room {
 	Double maxHeight;
 	
 	@OneToMany(mappedBy = "room", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+	@EqualsAndHashCode.Exclude
 	List<HangingUnit> hangingUnits;
 }

@@ -11,13 +11,18 @@ import javax.persistence.Table;
 
 import org.eihq.quiltshow.repository.StringListConverter;
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
+
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "reports")
 @Data
 @NoArgsConstructor
+@EqualsAndHashCode
 public class Report {
 	
 	public static enum ReportCategory {

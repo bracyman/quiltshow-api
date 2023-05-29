@@ -12,11 +12,14 @@ import org.eihq.quiltshow.model.Quilt;
 import org.eihq.quiltshow.model.Report;
 import org.eihq.quiltshow.model.Report.ReportCategory;
 import org.eihq.quiltshow.model.ReportResult;
+import org.eihq.quiltshow.reports.CheckInOutReport;
 import org.eihq.quiltshow.reports.PaymentStatusReport;
+import org.eihq.quiltshow.reports.StatisticsStatusReport;
 import org.eihq.quiltshow.repository.PersonRepository;
 import org.eihq.quiltshow.repository.QuiltRepository;
 import org.eihq.quiltshow.repository.QuiltSearchBuilder;
 import org.eihq.quiltshow.repository.ReportRepository;
+import org.eihq.quiltshow.repository.ShowRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -33,6 +36,9 @@ public class ReportService {
 	PaymentService paymentService;
 
 	@Autowired
+	ShowRepository showRepository;
+
+	@Autowired
 	QuiltRepository quiltRepository;
 
 	@Autowired
@@ -40,6 +46,7 @@ public class ReportService {
 
 	@Autowired
 	QuiltSearchBuilder quiltSearchBuilder;
+	
 
 	
 
@@ -55,6 +62,8 @@ public class ReportService {
 	public List<Report> getReports() {
 		List<Report> reports = new LinkedList<>(reportRepository.findAll());
 		reports.add(PaymentStatusReport.instance());
+		reports.add(new StatisticsStatusReport());
+		reports.add(new CheckInOutReport());
 		return reports;
 	}
 
@@ -71,6 +80,14 @@ public class ReportService {
 
 		if(id.equals(PaymentStatusReport.ID)) {
 			return PaymentStatusReport.instance();
+		}
+
+		if(id.equals(StatisticsStatusReport.ID)) {
+			return new StatisticsStatusReport();
+		}
+
+		if(id.equals(CheckInOutReport.ID)) {
+			return new CheckInOutReport();
 		}
 
 		return reportRepository.findById(id).orElseThrow(() -> new NotFoundException("Report", id));
@@ -125,6 +142,14 @@ public class ReportService {
 			return ((PaymentStatusReport)report).run(paymentService, personRepository);
 		}
 
+		if(report.getId().equals(StatisticsStatusReport.ID)) {
+			return new StatisticsStatusReport().run(quiltRepository, showRepository);
+		}
+
+		if(report.getId().equals(CheckInOutReport.ID)) {
+			return new CheckInOutReport().run(quiltRepository, showRepository);
+		}
+
 		return runReport(report);
 	}
 
@@ -156,9 +181,15 @@ public class ReportService {
 				Map<String, Object> searchResult = new HashMap<>();
 				report.getFields().forEach(f -> {
 					try {
-						Field field = Quilt.class.getDeclaredField(f);
-						field.setAccessible(true);
-						searchResult.put(f, field.get(q));
+						if(f.equalsIgnoreCase("perimeter")) {
+							searchResult.put("width", q.getWidth());
+							searchResult.put("length", q.getLength());
+						}
+						else {
+							Field field = Quilt.class.getDeclaredField(f);
+							field.setAccessible(true);
+							searchResult.put(f, field.get(q));
+						}
 					} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
 						searchResult.put(f, null);
 					}

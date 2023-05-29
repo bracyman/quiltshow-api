@@ -14,7 +14,9 @@ import javax.persistence.Table;
 
 import org.springframework.util.StringUtils;
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -25,6 +27,7 @@ import lombok.ToString;
 @Table(name = "categories")
 @Data
 @NoArgsConstructor
+@EqualsAndHashCode
 public class Category {
 
 	@Id

@@ -4,14 +4,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-import javax.websocket.server.PathParam;
-
 import org.eihq.quiltshow.configuration.UserRoles;
+import org.eihq.quiltshow.exception.NotFoundException;
+import org.eihq.quiltshow.model.HangingLocation;
 import org.eihq.quiltshow.model.HangingUnit;
 import org.eihq.quiltshow.model.Room;
-import org.eihq.quiltshow.repository.HangingUnitRepository;
-import org.eihq.quiltshow.repository.RoomRepository;
-import org.eihq.quiltshow.repository.WallRepository;
+import org.eihq.quiltshow.service.RoomService;
 import org.eihq.quiltshow.service.UserAuthentication;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -20,6 +18,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -31,14 +31,9 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/rooms")
 public class RoomController {
 
+
 	@Autowired
-	RoomRepository roomRepository;
-	
-	@Autowired
-	HangingUnitRepository hangingUnitRepository;
-	
-	@Autowired
-	WallRepository wallRepository;
+	RoomService roomService;
 	
 	@Autowired
 	UserAuthentication userAuthentication;
@@ -53,7 +48,7 @@ public class RoomController {
 			return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Collections.emptyList());
 		}
 		
-		return ResponseEntity.ok().body(roomRepository.findAll());
+		return ResponseEntity.ok().body(roomService.getRooms());
 	}
 	
 	@PostMapping("")
@@ -66,54 +61,48 @@ public class RoomController {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
 		}
 		
-		if(room.getId() != null) {
-			return updateRoom(auth, room.getId(), room);
-		}
-		
-		Room savedRoom = roomRepository.save(room);
+		Room savedRoom = roomService.saveRoom(room);
 		
 		return ResponseEntity.ok().body(savedRoom);
 	}
 	
 	
 	@GetMapping("/{id}")
-	public ResponseEntity<Room> getRoom(Authentication auth, @PathParam("id") Long id) {
+	public ResponseEntity<Room> getRoom(Authentication auth, @PathVariable("id") Long id) {
 		if(!userAuthentication.hasRole(UserRoles.ROLE_ADMIN)) {
 			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
 		}
 		
-		Optional<Room> room = roomRepository.findById(id);
+		Optional<Room> room = roomService.getRoom(id);
 		
-		if(room.isPresent()) {
-			return ResponseEntity.ok().body(room.get());
-		}
-		else {
-			return ResponseEntity.notFound().build();
-		}
+		return room.isPresent()
+			? ResponseEntity.ok().body(room.get())
+			: ResponseEntity.notFound().build();
 	}
 	
 	
 	@PutMapping("/{id}")
-	public ResponseEntity<Room> updateRoom(Authentication auth, @PathParam("id") Long id, @RequestBody Room room) {
+	public ResponseEntity<Room> updateRoom(Authentication auth, @PathVariable("id") Long id, @RequestBody Room room) {
 		if(!userAuthentication.hasRole(UserRoles.ROLE_ADMIN)) {
 			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
 		}
 		
-		if((room == null) || !room.getId().equals(id)) {
+		if(room == null) {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
 		}
 		
-		Room updatedRoom = roomRepository.save(room);
+		room.setId(id);
+		Room updatedRoom = roomService.saveRoom(room);
 		return ResponseEntity.ok().body(updatedRoom);
 	}
 	
 	@DeleteMapping("/{id}")
-	public ResponseEntity<Void> deleteRoom(Authentication auth, @PathParam("id") Long id) {
+	public ResponseEntity<Void> deleteRoom(Authentication auth, @PathVariable("id") Long id) {
 		if(!userAuthentication.hasRole(UserRoles.ROLE_ADMIN)) {
 			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
 		}
 
-		roomRepository.deleteById(id);
+		roomService.deleteRoom(id);
 		return ResponseEntity.ok(null);
 	}
 	
@@ -123,23 +112,20 @@ public class RoomController {
 	/*   Hanging Unit functions                                              */
 	/* ********************************************************************* */
 	@GetMapping("/{roomId}/hanging-units")
-	public ResponseEntity<List<HangingUnit>> getRoomHangingUnits(Authentication auth, @PathParam("roomId") Long roomId) {
+	public ResponseEntity<List<HangingUnit>> getRoomHangingUnits(Authentication auth, @PathVariable("roomId") Long roomId) {
 		if(!userAuthentication.hasRole(UserRoles.ROLE_ADMIN)) {
 			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
 		}
 		
-		Optional<Room> room = roomRepository.findById(roomId);
+		Optional<Room> room = roomService.getRoom(roomId);
 		
-		if(room.isPresent()) {
-			return ResponseEntity.ok().body(room.get().getHangingUnits());
-		}
-		else {
-			return ResponseEntity.notFound().build();
-		}
+		return room.isPresent()
+			? ResponseEntity.ok().body(room.get().getHangingUnits())
+			: ResponseEntity.notFound().build();
 	}
 	
 	@PostMapping("/{roomId}/hanging-units")
-	public ResponseEntity<HangingUnit> addHangingUnit(Authentication auth, @PathParam("roomId") Long roomId, @RequestBody HangingUnit hangingUnit) {
+	public ResponseEntity<HangingUnit> addHangingUnit(Authentication auth, @PathVariable("roomId") Long roomId, @RequestBody HangingUnit hangingUnit) {
 		if(!userAuthentication.hasRole(UserRoles.ROLE_ADMIN)) {
 			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
 		}
@@ -148,39 +134,24 @@ public class RoomController {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
 		}
 		
-		if(hangingUnit.getId() != null) {
-			return updateHangingUnit(auth, roomId, hangingUnit.getId(), hangingUnit);
-		}
-		
-		Optional<Room> room = roomRepository.findById(roomId);
+		Optional<Room> room = roomService.getRoom(roomId);
 		
 		if(!room.isPresent()) {
 			return ResponseEntity.notFound().build();
 		}
+
+		HangingUnit updatedUnit = roomService.saveHangingUnit(room.get(), hangingUnit);
 		
-		room.get().getHangingUnits().add(hangingUnit);
-		roomRepository.save(room.get());
-		
-		return ResponseEntity.ok().body(hangingUnit);
+		return ResponseEntity.ok().body(updatedUnit);
 	}
 
 	@GetMapping("/{roomId}/hanging-units/{unitId}")
-	public ResponseEntity<HangingUnit> getHangingUnit(Authentication auth, @PathParam("roomId") Long roomId, @PathParam("unitId") Long unitId) {
+	public ResponseEntity<HangingUnit> getHangingUnit(Authentication auth, @PathVariable("roomId") Long roomId, @PathVariable("unitId") Long unitId) {
 		if(!userAuthentication.hasRole(UserRoles.ROLE_ADMIN)) {
 			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
 		}
 		
-		if(unitId == null) {
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-		}
-		
-		Optional<Room> room = roomRepository.findById(roomId);
-		
-		if(!room.isPresent()) {
-			return ResponseEntity.notFound().build();
-		}
-		
-		Optional<HangingUnit> hangingUnit = room.get().getHangingUnits().stream().filter(h -> h.getId().equals(unitId)).findFirst();
+		Optional<HangingUnit> hangingUnit = roomService.getHangingUnit(unitId);
 		
 		return hangingUnit.isPresent()
 				? ResponseEntity.ok().body(hangingUnit.get())
@@ -188,7 +159,7 @@ public class RoomController {
 	}
 
 	@PutMapping("/{roomId}/hanging-units/{unitId}")
-	public ResponseEntity<HangingUnit> updateHangingUnit(Authentication auth, @PathParam("roomId") Long roomId, @PathParam("unitId") Long unitId, HangingUnit hangingUnit) {
+	public ResponseEntity<HangingUnit> updateHangingUnit(Authentication auth, @PathVariable("roomId") Long roomId, @PathVariable("unitId") Long unitId, @RequestBody HangingUnit hangingUnit) {
 		if(!userAuthentication.hasRole(UserRoles.ROLE_ADMIN)) {
 			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
 		}
@@ -197,14 +168,112 @@ public class RoomController {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
 		}
 		
-		Optional<Room> room = roomRepository.findById(roomId);
+		Optional<Room> room = roomService.getRoom(roomId);
 		
 		if(!room.isPresent()) {
 			return ResponseEntity.notFound().build();
 		}
 		
-		hangingUnitRepository.save(hangingUnit);
-		
+		roomService.saveHangingUnit(room.get(), hangingUnit);		
 		return ResponseEntity.ok().body(hangingUnit);
 	}
+		
+	@DeleteMapping("/{roomId}/hanging-units/{unitId}")
+	public ResponseEntity<Void> deleteHangingUnit(Authentication auth, @PathVariable("roomId") Long roomId, @PathVariable("unitId") Long unitId) {
+		if(!userAuthentication.hasRole(UserRoles.ROLE_ADMIN)) {
+			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+		}
+
+		Optional<Room> room = roomService.getRoom(roomId);
+		
+		if(!room.isPresent()) {
+			return ResponseEntity.notFound().build();
+		}
+		
+		roomService.deleteHangingUnit(unitId);	
+		return ResponseEntity.ok(null);
+	}
+
+	
+	@PostMapping("/walls/{wallId}")
+	public ResponseEntity<HangingLocation> hangQuiltOnWall(
+			Authentication auth, 
+			@PathVariable("wallId") Long wallId,
+			@RequestBody HangingLocation hangingLocation) {
+
+		if(!userAuthentication.hasRole(UserRoles.ROLE_ADMIN)) {
+			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+		}
+
+		HangingLocation updatedHangingLocation = roomService.hangQuilt(wallId, hangingLocation);
+		
+		return ResponseEntity.ok().body(updatedHangingLocation);
+	}
+	
+	@PatchMapping("/quilts/{quiltId}")
+	public ResponseEntity<HangingLocation> updateHangingLocation(Authentication auth, 
+			@PathVariable("quiltId") Long quiltId, 
+			@RequestBody HangingLocation hangingLocation) {
+		
+		HangingLocation updatedHangingLocation = roomService.saveHangingLocation(hangingLocation.getId(), hangingLocation);
+		
+		return ResponseEntity.ok().body(updatedHangingLocation);
+	}
+	
+	@DeleteMapping("/{roomId}/hanging-units/{unitId}/walls/{wallId}/hanging-locations/{hangingLocationId}")
+	public ResponseEntity<Void> unhangQuilt(
+			Authentication auth, 
+			@PathVariable("roomId") Long roomId, 
+			@PathVariable("unitId") Long unitId, 
+			@PathVariable("wallId") Long wallId,
+			@PathVariable("hangingLocationId") Long hangingLocationId) {
+		
+		if(!userAuthentication.hasRole(UserRoles.ROLE_ADMIN)) {
+			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+		}
+
+		Optional<Room> room = roomService.getRoom(roomId);		
+		if(!room.isPresent()) {
+			return ResponseEntity.notFound().build();
+		}
+
+		Optional<HangingUnit> hangingUnit = roomService.getHangingUnit(unitId);		
+		if(!hangingUnit.isPresent()) {
+			return ResponseEntity.notFound().build();
+		}
+
+		Optional<HangingLocation> hangingLocation = roomService.getHangingLocation(hangingLocationId);		
+		if(!hangingLocation.isPresent()) {
+			return ResponseEntity.notFound().build();
+		}
+
+		try {
+			roomService.unhangQuilt(hangingLocation.get());
+			return ResponseEntity.ok(null); 
+		}
+		catch(NotFoundException e) {
+			return ResponseEntity.notFound().build();
+		}
+		
+	}
+	
+	@DeleteMapping("/quilts/{quiltId}")
+	public ResponseEntity<Void> unhangQuilt(
+			Authentication auth, @PathVariable("quiltId") Long quiltId) {
+		
+		if(!userAuthentication.hasRole(UserRoles.ROLE_ADMIN)) {
+			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+		}
+
+		
+		try {
+			roomService.unhangQuilt(quiltId);
+			return ResponseEntity.ok(null); 
+		}
+		catch(NotFoundException e) {
+			return ResponseEntity.notFound().build();
+		}
+		
+	}
+	
 }

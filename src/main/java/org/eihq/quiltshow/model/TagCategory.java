@@ -26,9 +26,7 @@ import lombok.ToString;
 @Table(name = "tag_categories")
 @Data
 @NoArgsConstructor
-@JsonIdentityInfo(
-		  generator = ObjectIdGenerators.PropertyGenerator.class, 
-		  property = "id")
+@EqualsAndHashCode
 public class TagCategory {
 
 	@Id

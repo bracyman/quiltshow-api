@@ -10,15 +10,19 @@ import javax.persistence.Id;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "payments")
 @Data
 @NoArgsConstructor
+@EqualsAndHashCode
 public class PaymentData {
 	public enum Status {
 		STARTED, IN_PROCESS, VERIFIED, ERROR, COMPLETED
@@ -42,6 +46,7 @@ public class PaymentData {
 	
 	@OneToMany(mappedBy = "paymentData")
 	@JsonIgnore
+	@EqualsAndHashCode.Exclude
 	List<Quilt> quilts = new LinkedList<>();
 	
 	Status status;

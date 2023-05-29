@@ -19,4 +19,9 @@ public enum GroupSize {
 		}
 		return GroupSize.valueOf(str.toUpperCase());
 	}
+	
+	public String readableName() {
+		String readableName = toString().toLowerCase(); 
+		return readableName.toUpperCase().substring(0,1) + readableName.substring(1);
+	}
 }
