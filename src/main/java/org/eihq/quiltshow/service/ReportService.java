@@ -14,6 +14,7 @@ import org.eihq.quiltshow.model.Report.ReportCategory;
 import org.eihq.quiltshow.model.ReportResult;
 import org.eihq.quiltshow.reports.CheckInOutReport;
 import org.eihq.quiltshow.reports.PaymentStatusReport;
+import org.eihq.quiltshow.reports.QuiltIdSlipReport;
 import org.eihq.quiltshow.reports.StatisticsStatusReport;
 import org.eihq.quiltshow.repository.PersonRepository;
 import org.eihq.quiltshow.repository.QuiltRepository;
@@ -64,6 +65,8 @@ public class ReportService {
 		reports.add(PaymentStatusReport.instance());
 		reports.add(new StatisticsStatusReport());
 		reports.add(new CheckInOutReport());
+		reports.add(new QuiltIdSlipReport());
+		
 		return reports;
 	}
 
@@ -88,6 +91,10 @@ public class ReportService {
 
 		if(id.equals(CheckInOutReport.ID)) {
 			return new CheckInOutReport();
+		}
+
+		if(id.equals(QuiltIdSlipReport.ID)) {
+			return new QuiltIdSlipReport();
 		}
 
 		return reportRepository.findById(id).orElseThrow(() -> new NotFoundException("Report", id));
@@ -148,6 +155,10 @@ public class ReportService {
 
 		if(report.getId().equals(CheckInOutReport.ID)) {
 			return new CheckInOutReport().run(quiltRepository, showRepository);
+		}
+
+		if(report.getId().equals(CheckInOutReport.ID)) {
+			return new QuiltIdSlipReport().run(quiltRepository, showRepository);
 		}
 
 		return runReport(report);
