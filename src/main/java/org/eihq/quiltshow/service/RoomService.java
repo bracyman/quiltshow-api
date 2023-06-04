@@ -2,6 +2,7 @@ package org.eihq.quiltshow.service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.eihq.quiltshow.exception.NotFoundException;
 import org.eihq.quiltshow.model.HangingLocation;
@@ -18,6 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import lombok.extern.slf4j.Slf4j;
+import okhttp3.internal.http2.Huffman;
 
 @Service
 @Slf4j
@@ -58,14 +60,36 @@ public class RoomService {
 			hangingUnit.setRoom(room);
 		});
 		
-		Room updatedRoom = roomRepository.saveAndFlush(room);
-		log.info("Saved room [{}]", updatedRoom.getId());
-		
-		updatedRoom.getHangingUnits().forEach(unit -> {
-			saveHangingUnit(updatedRoom, unit);
-		});
-		
-		return updatedRoom;
+		if(room.getId() == null) {
+			Room updatedRoom = roomRepository.saveAndFlush(room);
+			log.info("Saved room [{}]", updatedRoom.getId());
+			
+			updatedRoom.getHangingUnits().forEach(unit -> {
+				saveHangingUnit(updatedRoom, unit);
+			});
+
+			return updatedRoom;
+		}
+		else {
+			Room currentRoom = roomRepository.findById(room.getId()).orElseThrow(() -> new NotFoundException(String.format("Unable to find room %d, cannot save", room.getId())) );
+			
+			// check for deleted hanging units
+			List<Long> updatedRoomIds = room.getHangingUnits().stream().map(hu -> hu.getId()).collect(Collectors.toList());
+			currentRoom.getHangingUnits().forEach(hu -> {
+				if(!updatedRoomIds.contains(hu.getId())) {
+					deleteHangingUnit(hu);
+				}
+			});
+
+			Room updatedRoom = roomRepository.saveAndFlush(room);
+			log.info("Saved room [{}]", updatedRoom.getId());
+			
+			updatedRoom.getHangingUnits().forEach(unit -> {
+				saveHangingUnit(updatedRoom, unit);
+			});
+			
+			return currentRoom;
+		}
 	}
 	
 	public void deleteRoom(Long id) {
