@@ -13,6 +13,7 @@ import org.eihq.quiltshow.model.Report;
 import org.eihq.quiltshow.model.Report.ReportCategory;
 import org.eihq.quiltshow.model.ReportResult;
 import org.eihq.quiltshow.reports.CheckInOutReport;
+import org.eihq.quiltshow.reports.HangingLabelsReport;
 import org.eihq.quiltshow.reports.PaymentStatusReport;
 import org.eihq.quiltshow.reports.QuiltIdSlipReport;
 import org.eihq.quiltshow.reports.StatisticsStatusReport;
@@ -49,7 +50,39 @@ public class ReportService {
 	QuiltSearchBuilder quiltSearchBuilder;
 	
 
-	
+	public List<Object> executeQuery(String query) {
+		return quiltSearchBuilder.executeQuery(query);
+	}
+
+	public ReportResult executeQueryReport(Report report) {
+		return new ReportResult(report, quiltSearchBuilder.executeQueryReport(report));
+	}
+
+	public ReportResult executeQueryReport(Long reportId) {
+		Report report = getReport(reportId);
+
+		if(report.getId().equals(PaymentStatusReport.ID)) {
+			return ((PaymentStatusReport)report).run(paymentService, personRepository);
+		}
+
+		if(report.getId().equals(StatisticsStatusReport.ID)) {
+			return new StatisticsStatusReport().run(quiltRepository, showRepository);
+		}
+
+		if(report.getId().equals(CheckInOutReport.ID)) {
+			return new CheckInOutReport().run(quiltSearchBuilder);
+		}
+
+		if(report.getId().equals(QuiltIdSlipReport.ID)) {
+			return new QuiltIdSlipReport().run(quiltSearchBuilder);
+		}
+		
+		if(report.getId().equals(HangingLabelsReport.ID)) {
+			return new HangingLabelsReport().run(quiltSearchBuilder);
+		}
+		
+		return new ReportResult(report, quiltSearchBuilder.executeQueryReport(report));
+	}
 
 	public List<ReportCategory> getReportCategories() {
 		return Arrays.asList(ReportCategory.values());
@@ -66,7 +99,7 @@ public class ReportService {
 		reports.add(new StatisticsStatusReport());
 		reports.add(new CheckInOutReport());
 		reports.add(new QuiltIdSlipReport());
-		
+		reports.add(new HangingLabelsReport());
 		return reports;
 	}
 
@@ -92,9 +125,13 @@ public class ReportService {
 		if(id.equals(CheckInOutReport.ID)) {
 			return new CheckInOutReport();
 		}
-
+		
 		if(id.equals(QuiltIdSlipReport.ID)) {
 			return new QuiltIdSlipReport();
+		}
+
+		if(id.equals(HangingLabelsReport.ID)) {
+			return new HangingLabelsReport();
 		}
 
 		return reportRepository.findById(id).orElseThrow(() -> new NotFoundException("Report", id));
@@ -154,11 +191,15 @@ public class ReportService {
 		}
 
 		if(report.getId().equals(CheckInOutReport.ID)) {
-			return new CheckInOutReport().run(quiltRepository, showRepository);
+			return new CheckInOutReport().run(quiltSearchBuilder);
 		}
 
-		if(report.getId().equals(CheckInOutReport.ID)) {
-			return new QuiltIdSlipReport().run(quiltRepository, showRepository);
+		if(report.getId().equals(QuiltIdSlipReport.ID)) {
+			return new QuiltIdSlipReport().run(quiltSearchBuilder);
+		}
+		
+		if(report.getId().equals(HangingLabelsReport.ID)) {
+			return new HangingLabelsReport().run(quiltSearchBuilder);
 		}
 
 		return runReport(report);

@@ -58,6 +58,12 @@ public class Category {
 	
 	private Boolean judgeable = Boolean.TRUE;
 	
+
+
+	public Category(Long id) {
+		this.id = id;
+	}
+
 	
 	public String getShortDescription() {
 		if(!StringUtils.hasText(this.shortDescription)) {
@@ -66,4 +72,5 @@ public class Category {
 		
 		return this.shortDescription;
 	}
+
 }

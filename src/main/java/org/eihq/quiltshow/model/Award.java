@@ -33,6 +33,8 @@ public class Award {
 	
 	private String description;
 	
+	private Integer displayOrder;
+	
 	@JsonIgnore
 	@ManyToOne
 	@EqualsAndHashCode.Exclude

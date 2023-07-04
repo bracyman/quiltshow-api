@@ -5,11 +5,14 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
+import javax.persistence.Query;
 import javax.persistence.TypedQuery;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
@@ -20,11 +23,13 @@ import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
 import javax.persistence.criteria.Subquery;
 
+import org.apache.commons.lang.StringUtils;
 import org.eihq.quiltshow.model.Award;
 import org.eihq.quiltshow.model.Category;
 import org.eihq.quiltshow.model.GroupSize;
 import org.eihq.quiltshow.model.Person;
 import org.eihq.quiltshow.model.Quilt;
+import org.eihq.quiltshow.model.QuiltSearchData;
 import org.eihq.quiltshow.model.Report;
 import org.eihq.quiltshow.model.SearchField;
 import org.eihq.quiltshow.model.SearchField.MatchType;
@@ -32,6 +37,8 @@ import org.eihq.quiltshow.model.Tag;
 import org.eihq.quiltshow.service.ShowService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import com.fasterxml.jackson.annotation.ObjectIdGenerators.StringIdGenerator;
 
 @Component
 public class QuiltSearchBuilder {
@@ -337,4 +344,248 @@ public class QuiltSearchBuilder {
 	}
 
 	//*/
+	
+
+	public List<Object> executeQuery(String query) {
+		Query typedQuery = entityManager.createQuery(query);
+		return typedQuery.getResultList();
+	}
+	
+	public List<QuiltSearchResult> executeQueryReport(Report report) {
+		if(report.getFields().contains("count")) {
+			return executeCountingQueryReport(report);
+		}
+		
+		List<String> wheres = new ArrayList<>();
+		Map<String,Object> params = new HashMap<>();		
+		buildSearchFilters(report, wheres, params);
+		
+		StringBuilder jpql = new StringBuilder()
+				.append("select qsd from QuiltSearchData qsd ");
+		
+		if(wheres.size() > 0) {
+			jpql.append("where ").append(wheres.stream().collect(Collectors.joining(" and ")));
+		}
+		
+		if(report.getSortOrder().size() > 0) {
+			jpql.append(" order by ")
+				.append(report.getSortOrder().stream().map(f -> getSortField(f)).collect(Collectors.joining(",")));
+		}
+		
+		
+		TypedQuery<QuiltSearchData> typedQuery = entityManager.createQuery(jpql.toString(), QuiltSearchData.class);
+		params.forEach((k, v) -> typedQuery.setParameter(k, v));
+		List<QuiltSearchData> results = typedQuery.getResultList();
+		
+		List<QuiltSearchResult> searchResults = new ArrayList<>();
+		results.forEach(row -> searchResults.add(new QuiltSearchResult(row)));
+		
+		return searchResults;
+	}
+
+	
+	public List<QuiltSearchResult> executeCountingQueryReport(Report report) {
+		List<String> wheres = new ArrayList<>();
+		Map<String,Object> params = new HashMap<>();		
+		buildSearchFilters(report, wheres, params);
+		
+		List<String> fields = report.getFields().stream()
+				.filter(f -> (!f.equals("count") && !f.equals("tags")))
+				.collect(Collectors.toList());
+		StringBuilder jpql = new StringBuilder().append("select count(qsd)");
+		fields.stream().forEach(f -> jpql.append(", qsd.quilt.").append(f));
+		jpql.append(" from QuiltSearchData qsd ");
+		
+		if(wheres.size() > 0) {
+			jpql.append("where ").append(wheres.stream().collect(Collectors.joining(" and ")));
+		}
+		
+		jpql.append(" group by ")
+			.append(fields.stream()
+					.map(f -> String.format("qsd.quilt.%s", f))
+					.collect(Collectors.joining(", ")));
+		
+		Query typedQuery = entityManager.createQuery(jpql.toString());
+		params.forEach((k, v) -> typedQuery.setParameter(k, v));
+		List<Object[]> results = typedQuery.getResultList();		
+		
+		List<QuiltSearchResult> searchResults = new ArrayList<>();
+		results.forEach(row -> {
+			QuiltSearchData qsd = new QuiltSearchData();
+			for(int i = 0; i < fields.size(); i++) {
+				qsd.set(fields.get(i), row[i+1]);
+			}
+			searchResults.add(new QuiltSearchResult(qsd, (Long)row[0]));	
+		});
+		
+		return searchResults;
+	}
+
+	private void buildSearchFilters(Report report, List<String> wheres, Map<String,Object> params) {	
+		addStringMatch(report.getName(), "name", wheres, params);
+		addNumberMatch(report.getNumber(), "number", wheres, params);
+		addNumberMatch(report.getWidth(), "width", wheres, params);
+		addNumberMatch(report.getLength(), "length", wheres, params);
+		addStringMatch(report.getDescription(), "description", wheres, params);
+		addCategoryMatch(report.getCategory(), "category", wheres, params);
+		addTagMatch(report.getTags(), "tags", wheres, params);
+		addBooleanMatch(report.getJudged(), "judged", wheres, params);
+		addGroupSizeMatch(report.getGroupSize(), "groupSize", wheres, params);
+//		addPersonMatch(report.getEnteredBy(), "enteredBy", wheres, params);
+		addStringMatch(report.getAdditionalQuilters(), "additionalQuilters", wheres, params);
+		addBooleanMatch(report.getFirstEntry(), "firstEntry", wheres, params);
+		addNumberMatch(report.getHangingPreference(), "hangingPreference", wheres, params);
+		addStringMatch(report.getMainColor(), "mainColor", wheres, params);
+		addBooleanMatch(report.getPresidentsChallenge(), "presidentsChallenge", wheres, params);
+	}
+
+	private boolean tagsMatch(List<Tag> quiltTags, SearchField searchField) {
+		if((quiltTags == null) || quiltTags.isEmpty()) {
+			return false;
+		}
+		
+		if(StringUtils.isEmpty(searchField.getMatches())) {
+			return true;
+		}
+		
+		MatchType matchType = searchField.getMatchType() == null ? MatchType.ONE_OF : searchField.getMatchType();
+		List<String> searchIds = Arrays.asList(searchField.getMatches().split(","));
+		if(matchType == MatchType.ONE_OF) {
+			if(quiltTags.stream().anyMatch(t -> searchIds.contains(t.getId().toString()))) {
+				return true;
+			}
+			return false;
+		}
+
+		if(matchType == MatchType.ALL_OF) {
+			if(quiltTags.stream().allMatch(t -> searchIds.contains(t.getId().toString()))) {
+				return true;
+			}
+			return false;
+		}
+
+		return false;
+	}
+
+	private void addBooleanMatch(SearchField searchField, String field, List<String> wheres, Map<String,Object> params) {
+		if(searchField == null) {
+			return;
+		}
+		
+		if(!StringUtils.isEmpty(searchField.getMatches())) {
+			if(searchField.getMatchesBoolean() == Boolean.FALSE) {
+				wheres.add("(qsd.quilt." + field + " != TRUE)");
+			}
+			else {
+				wheres.add("(qsd.quilt." + field + " = TRUE)");
+			}
+		}
+	}
+
+	private void addStringMatch(SearchField searchField, String field, List<String> wheres, Map<String,Object> params) {
+		if(searchField == null) {
+			return;
+		}
+		
+		if(!StringUtils.isEmpty(searchField.getMatches())) {
+			if(searchField.getMatchType() == SearchField.MatchType.EQUALS) {
+				wheres.add("(upper(qsd.quilt." + field + ") = upper(:" + field + "))");
+				params.put(field, searchField.getMatches());
+			}
+			else {
+				wheres.add("(upper(qsd.quilt." + field + ") like :" + field + ")");
+				params.put(field, "%" + searchField.getMatches().toUpperCase() + "%");
+			}
+		}
+	}
+
+	private void addGroupSizeMatch(SearchField searchField, String field, List<String> wheres, Map<String,Object> params) {
+		if(searchField == null) {
+			return;
+		}
+		
+		if(!StringUtils.isEmpty(searchField.getMatches())) {
+			String sizes[] = searchField.getMatches().split(",");
+			StringBuilder where = new StringBuilder("(");
+			String separator = "";
+			
+			for(int i=0; i < sizes.length; i++) {
+				int size = GroupSize.from(sizes[i]).ordinal();
+				where.append(separator).append("(qsd.quilt." + field + " = " + size + ")");
+				separator = " or ";
+			}
+			
+			where.append(")");
+			wheres.add(where.toString());
+		}
+	}
+	
+	private void addNumberMatch(SearchField searchField, String field, List<String> wheres, Map<String,Object> params) {
+		if(searchField == null) {
+			return;
+		}
+		
+		if(!StringUtils.isEmpty(searchField.getMatches())) {
+			if(searchField.getMatchType() == SearchField.MatchType.EQUALS) {
+				wheres.add("(qsd.quilt." + field + " = :" + field + ")");
+				params.put(field, searchField.getMatchesNumber());
+			}
+			else if(searchField.getMatchType() == SearchField.MatchType.LESS_THAN) {
+				wheres.add("(qsd.quilt." + field + " < :" + field + ")");
+				params.put(field, searchField.getMatchesNumber());
+			}
+			else if(searchField.getMatchType() == SearchField.MatchType.GREATER_THAN) {
+				wheres.add("(qsd.quilt." + field + " > :" + field + ")");
+				params.put(field, searchField.getMatchesNumber());
+			}
+			else if(searchField.getMatchType() == SearchField.MatchType.BETWEEN) {
+				wheres.add("(qsd.quilt." + field + " >= :" + field + "RangeMin" + " and q." + field + " <= :" + field + "RangeMax)");
+
+				params.put(field + "RangeMin", searchField.getMatchesRangeMin());
+				params.put(field + "RangeMax", searchField.getMatchesRangeMax());
+			}
+		}
+	}
+
+	private void addCategoryMatch(SearchField searchField, String field, List<String> wheres, Map<String,Object> params) {
+		if(searchField == null) {
+			return;
+		}
+		
+		if(!StringUtils.isEmpty(searchField.getMatches())) {
+			List<String> values = Arrays.asList(searchField.getMatches().split(",")); 
+			wheres.add(String.format("(qsd.quilt.%s IN :%s)", field, field));
+			params.put(field, values.stream().map(c -> new Category(Long.parseLong(c))).collect(Collectors.toList()));
+		}
+	}
+
+	private void addTagMatch(SearchField searchField, String field, List<String> wheres, Map<String,Object> params) {
+		if(searchField == null) {
+			return;
+		}
+		
+		if(!StringUtils.isEmpty(searchField.getMatches())) {
+			String separator = searchField.getMatchType() == MatchType.ALL_OF ? " and " : " or ";
+			List<String> values = Arrays.asList(searchField.getMatches().split(","));
+			
+			StringBuilder tagFilter = new StringBuilder("(");
+			for(int i = 0; i < values.size(); i++) {
+				String fieldName = String.format("tag_value_%d", i);
+				tagFilter.append(String.format("%s(:%s MEMBER OF qsd.quilt.tags)", i > 0 ? separator : "", fieldName));
+				
+				Tag t = new Tag();
+				t.setId(Long.valueOf(values.get(i)));
+				params.put(fieldName, t);
+			}
+			tagFilter.append(")");
+			wheres.add(tagFilter.toString());
+		}
+	}
+	
+	private String getSortField(String field) {
+		if("category".equals(field)) return "qsd.quilt.category.displayOrder, qsd.quilt.category.name";
+		if("enteredBy".equals(field)) return "qsd.quilt.enteredBy.lastName, qsd.quilt.enteredBy.firstName";
+		
+		return String.format("qsd.quilt.%s", field);
+	}
 }

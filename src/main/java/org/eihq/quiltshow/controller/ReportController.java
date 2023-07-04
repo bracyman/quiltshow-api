@@ -2,9 +2,11 @@ package org.eihq.quiltshow.controller;
 
 import java.util.List;
 
+import org.eihq.quiltshow.model.QuiltSearchData;
 import org.eihq.quiltshow.model.Report;
 import org.eihq.quiltshow.model.Report.ReportCategory;
 import org.eihq.quiltshow.model.ReportResult;
+import org.eihq.quiltshow.repository.QuiltSearchResult;
 import org.eihq.quiltshow.service.ReportService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
@@ -25,6 +27,23 @@ public class ReportController {
 	@Autowired
 	ReportService reportService;
 	
+	@PostMapping("/trial")
+	public List<Object> tryQuery(@RequestBody String query) {
+		List<Object> results = reportService.executeQuery(query);
+		return results;
+	}
+	
+	@PostMapping("/trial/search")
+	public ReportResult trySearch(@RequestBody Report report) {
+		ReportResult results = reportService.executeQueryReport(report);
+		return results;
+	}
+	
+	@GetMapping("/trial/report/{reportId}/run")
+	public ReportResult trySearch(@PathVariable Long reportId) {
+		ReportResult results = reportService.executeQueryReport(reportId);
+		return results;
+	}
 	
 	@GetMapping
 	public List<Report> getAllReports(Authentication auth) {

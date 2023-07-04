@@ -1,26 +1,21 @@
 package org.eihq.quiltshow.reports;
 
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 
 import org.eihq.quiltshow.model.Report;
 import org.eihq.quiltshow.model.ReportResult;
-import org.eihq.quiltshow.repository.QuiltRepository;
 import org.eihq.quiltshow.repository.QuiltSearchBuilder;
-import org.eihq.quiltshow.repository.ShowRepository;
 
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class CheckInOutReport extends Report {
+public class HangingLabelsReport extends Report {
 
-	public static final Long ID = -30l;
+	public static final Long ID = -60l;
 	
 	
-	public CheckInOutReport() {
+	public HangingLabelsReport() {
 		
 	}
 
@@ -32,24 +27,28 @@ public class CheckInOutReport extends Report {
 
 	@Override
 	public String getReportName() {
-		return "Check In/Out";
+		return "Hanging Tags";
 	}
 
 
 	@Override
 	public ReportCategory getReportCategory() {
-		return ReportCategory.SHOW;
+		return ReportCategory.MISCELLANEOUS;
 	}
 	
 	@Override
 	public String getFormat() {
-		return "CheckInOut";
+		return "description-card";
 	}
-
+	
+	@Override
+	public Boolean getFavorite() {
+		return true;
+	}
 
 	@Override
 	public String getReportDescription() {
-		return "Forms to check quilts in and out of the show";
+		return "Half page hanging tags";
 	}
 
 
