@@ -13,6 +13,7 @@ import org.eihq.quiltshow.model.GroupSize;
 import org.eihq.quiltshow.model.HangingLocation;
 import org.eihq.quiltshow.model.HangingUnit;
 import org.eihq.quiltshow.model.HangingUnit.Types;
+import org.eihq.quiltshow.model.JudgeComment;
 import org.eihq.quiltshow.model.Person;
 import org.eihq.quiltshow.model.Quilt;
 import org.eihq.quiltshow.model.QuiltSearchData;
@@ -77,6 +78,8 @@ class QuiltResult {
     LocalDateTime lastUpdatedOn;
     Set<AwardResult> awards;
     
+    JudgeComment judgeComment;
+    
 	public QuiltResult(Quilt quilt) {
 		this.id = quilt.getId();
 		this.number = quilt.getNumber();
@@ -106,6 +109,8 @@ class QuiltResult {
 		this.submittedOn = quilt.getSubmittedOn(); 
 		this.lastUpdatedOn = quilt.getLastUpdatedOn();
 		this.awards = quilt.getAwards().stream().map(a -> (a == null) ? null : new AwardResult(a)).collect(Collectors.toSet());
+		
+		this.judgeComment = quilt.getJudgeComment();
 	}
 }
 
@@ -213,11 +218,13 @@ class AwardResult {
 	private String name;
 	private String description;
 	Integer displayOrder;
+	CategoryResult category;
 
 	public AwardResult(Award a) {
 		this.id = a.getId();
 		this.name = a.getName();
 		this.description = a.getDescription();
 		this.displayOrder = a.getDisplayOrder();
+		this.category = a.getCategory() == null ? null : new CategoryResult(a.getCategory());
 	}
 }

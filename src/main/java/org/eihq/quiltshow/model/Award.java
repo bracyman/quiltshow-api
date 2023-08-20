@@ -10,16 +10,14 @@ import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 
-import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
 @Entity
-@Table(name = "people")
+@Table(name = "awards")
 @Data
 @EqualsAndHashCode
 public class Award {
@@ -31,9 +29,13 @@ public class Award {
 
 	private String name;
 	
+	private String color;
+	
 	private String description;
 	
 	private Integer displayOrder;
+	
+	private Boolean multipleRecipients = Boolean.FALSE;
 	
 	@JsonIgnore
 	@ManyToOne
@@ -51,4 +53,7 @@ public class Award {
 	public Award() {
 		awardedTo = new HashSet<>();
 	}
+	
+	@ManyToOne
+	private Category category;
 }

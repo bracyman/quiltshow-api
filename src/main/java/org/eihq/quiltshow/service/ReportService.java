@@ -12,6 +12,9 @@ import org.eihq.quiltshow.model.Quilt;
 import org.eihq.quiltshow.model.Report;
 import org.eihq.quiltshow.model.Report.ReportCategory;
 import org.eihq.quiltshow.model.ReportResult;
+import org.eihq.quiltshow.reports.AllJudgeCommentsReport;
+import org.eihq.quiltshow.reports.BlankJudgeCommentsReport;
+import org.eihq.quiltshow.reports.AllAwardsReport;
 import org.eihq.quiltshow.reports.CheckInOutReport;
 import org.eihq.quiltshow.reports.HangingLabelsReport;
 import org.eihq.quiltshow.reports.PaymentStatusReport;
@@ -30,7 +33,7 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @Slf4j
 public class ReportService {
-
+	
 	@Autowired
 	ReportRepository reportRepository;
 
@@ -80,6 +83,18 @@ public class ReportService {
 		if(report.getId().equals(HangingLabelsReport.ID)) {
 			return new HangingLabelsReport().run(quiltSearchBuilder);
 		}
+
+		if(report.getId().equals(AllJudgeCommentsReport.ID)) {
+			return new AllJudgeCommentsReport().run(quiltSearchBuilder);
+		}
+		
+		if(report.getId().equals(BlankJudgeCommentsReport.ID)) {
+			return new BlankJudgeCommentsReport().run(quiltSearchBuilder);
+		}
+		
+		if(report.getId().equals(AllAwardsReport.ID)) {
+			return new AllAwardsReport().run(quiltSearchBuilder);
+		}
 		
 		return new ReportResult(report, quiltSearchBuilder.executeQueryReport(report));
 	}
@@ -100,6 +115,9 @@ public class ReportService {
 		reports.add(new CheckInOutReport());
 		reports.add(new QuiltIdSlipReport());
 		reports.add(new HangingLabelsReport());
+		reports.add(new AllJudgeCommentsReport());
+		reports.add(new BlankJudgeCommentsReport());
+		reports.add(new AllAwardsReport());
 		return reports;
 	}
 
@@ -132,6 +150,18 @@ public class ReportService {
 
 		if(id.equals(HangingLabelsReport.ID)) {
 			return new HangingLabelsReport();
+		}
+		
+		if(id.equals(AllJudgeCommentsReport.ID)) {
+			return new AllJudgeCommentsReport();
+		}
+
+		if(id.equals(BlankJudgeCommentsReport.ID)) {
+			return new BlankJudgeCommentsReport();
+		}
+		
+		if(id.equals(AllAwardsReport.ID)) {
+			return new AllAwardsReport();
 		}
 
 		return reportRepository.findById(id).orElseThrow(() -> new NotFoundException("Report", id));
@@ -200,6 +230,18 @@ public class ReportService {
 		
 		if(report.getId().equals(HangingLabelsReport.ID)) {
 			return new HangingLabelsReport().run(quiltSearchBuilder);
+		}
+
+		if(report.getId().equals(AllJudgeCommentsReport.ID)) {
+			return new AllJudgeCommentsReport().run(quiltSearchBuilder);
+		}
+		
+		if(report.getId().equals(BlankJudgeCommentsReport.ID)) {
+			return new BlankJudgeCommentsReport().run(quiltSearchBuilder);
+		}
+
+		if(report.getId().equals(AllAwardsReport.ID)) {
+			return new AllAwardsReport().run(quiltSearchBuilder);
 		}
 
 		return runReport(report);

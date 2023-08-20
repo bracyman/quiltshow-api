@@ -5,17 +5,19 @@ import java.util.List;
 
 import org.eihq.quiltshow.model.Report;
 import org.eihq.quiltshow.model.ReportResult;
+import org.eihq.quiltshow.model.SearchField;
+import org.eihq.quiltshow.model.SearchField.MatchType;
 import org.eihq.quiltshow.repository.QuiltSearchBuilder;
 
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class HangingLabelsReport extends Report {
+public class AllAwardsReport extends Report {
 
-	public static final Long ID = -60l;
+	public static final Long ID = -80l;
 	
 	
-	public HangingLabelsReport() {
+	public AllAwardsReport() {
 		
 	}
 
@@ -27,18 +29,18 @@ public class HangingLabelsReport extends Report {
 
 	@Override
 	public String getReportName() {
-		return "Hanging Tags";
+		return "Show Awards";
 	}
 
 
 	@Override
 	public ReportCategory getReportCategory() {
-		return ReportCategory.MISCELLANEOUS;
+		return ReportCategory.AWARDS;
 	}
 	
 	@Override
 	public String getFormat() {
-		return "description-card";
+		return "all-awards";
 	}
 	
 	@Override
@@ -48,7 +50,7 @@ public class HangingLabelsReport extends Report {
 
 	@Override
 	public String getReportDescription() {
-		return "Half page hanging tags";
+		return "All Quilt Show Awards";
 	}
 
 
@@ -57,10 +59,6 @@ public class HangingLabelsReport extends Report {
 		return Arrays.asList("name", "number","judged","groupSize","category","tags", "hangingLocation");
 	}
 
-	@Override
-	public List<String> getSortOrder() {
-		return Arrays.asList("judged", "enteredBy", "name");
-	}
 	
 	
 	public ReportResult run(QuiltSearchBuilder quiltSearchBuilder) {

@@ -56,6 +56,12 @@ public class Category {
 	@ToString.Exclude
 	Set<Quilt> quilts = new HashSet<>();
 	
+	@JsonIgnore
+	@OneToMany(cascade = CascadeType.ALL, orphanRemoval = false, mappedBy = "category")
+	@EqualsAndHashCode.Exclude
+	@ToString.Exclude
+	Set<Award> awards = new HashSet<>();
+	
 	private Boolean judgeable = Boolean.TRUE;
 	
 

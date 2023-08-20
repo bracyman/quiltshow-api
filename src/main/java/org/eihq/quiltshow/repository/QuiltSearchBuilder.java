@@ -38,8 +38,6 @@ import org.eihq.quiltshow.service.ShowService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import com.fasterxml.jackson.annotation.ObjectIdGenerators.StringIdGenerator;
-
 @Component
 public class QuiltSearchBuilder {
 
@@ -367,9 +365,9 @@ public class QuiltSearchBuilder {
 			jpql.append("where ").append(wheres.stream().collect(Collectors.joining(" and ")));
 		}
 		
-		if(report.getSortOrder().size() > 0) {
+		if(report.getSortOrder().stream().filter(so -> !StringUtils.isBlank(so)).count() > 0) {
 			jpql.append(" order by ")
-				.append(report.getSortOrder().stream().map(f -> getSortField(f)).collect(Collectors.joining(",")));
+				.append(report.getSortOrder().stream().filter(so -> !StringUtils.isBlank(so)).map(f -> getSortField(f)).collect(Collectors.joining(",")));
 		}
 		
 		
@@ -437,6 +435,8 @@ public class QuiltSearchBuilder {
 		addNumberMatch(report.getHangingPreference(), "hangingPreference", wheres, params);
 		addStringMatch(report.getMainColor(), "mainColor", wheres, params);
 		addBooleanMatch(report.getPresidentsChallenge(), "presidentsChallenge", wheres, params);
+		addNotNullMatch(report.getJudgeComment(), "judgeComment", wheres, params);
+		addNotNullMatch(report.getAwards(), "awards", wheres, params);
 	}
 
 	private boolean tagsMatch(List<Tag> quiltTags, SearchField searchField) {
@@ -526,17 +526,23 @@ public class QuiltSearchBuilder {
 		}
 		
 		if(!StringUtils.isEmpty(searchField.getMatches())) {
-			if(searchField.getMatchType() == SearchField.MatchType.EQUALS) {
-				wheres.add("(qsd.quilt." + field + " = :" + field + ")");
-				params.put(field, searchField.getMatchesNumber());
+			if((searchField.getMatchType() == null) || (searchField.getMatchType() == SearchField.MatchType.EQUALS)) {
+				if(searchField.getMatches().contains(",")) {
+					wheres.add("(qsd.quilt." + field + " in :" + field + ")");
+					params.put(field, searchField.getMatchesIntegerList());
+				}
+				else {
+					wheres.add("(qsd.quilt." + field + " = :" + field + ")");
+					params.put(field, searchField.getMatchesInt());
+				}
 			}
 			else if(searchField.getMatchType() == SearchField.MatchType.LESS_THAN) {
 				wheres.add("(qsd.quilt." + field + " < :" + field + ")");
-				params.put(field, searchField.getMatchesNumber());
+				params.put(field, searchField.getMatchesInt());
 			}
 			else if(searchField.getMatchType() == SearchField.MatchType.GREATER_THAN) {
 				wheres.add("(qsd.quilt." + field + " > :" + field + ")");
-				params.put(field, searchField.getMatchesNumber());
+				params.put(field, searchField.getMatchesInt());
 			}
 			else if(searchField.getMatchType() == SearchField.MatchType.BETWEEN) {
 				wheres.add("(qsd.quilt." + field + " >= :" + field + "RangeMin" + " and q." + field + " <= :" + field + "RangeMax)");
@@ -544,6 +550,19 @@ public class QuiltSearchBuilder {
 				params.put(field + "RangeMin", searchField.getMatchesRangeMin());
 				params.put(field + "RangeMax", searchField.getMatchesRangeMax());
 			}
+		}
+	}
+	
+	private void addNotNullMatch(SearchField searchField, String field, List<String> wheres, Map<String,Object> params) {
+		if(searchField == null) {
+			return;
+		}
+		
+		if(field.equals("tags") || field.equals("awards")) {
+			wheres.add("(not qsd.quilt." + field + " is empty)");
+		}
+		else {
+			wheres.add("(not qsd.quilt." + field + " is null)");
 		}
 	}
 

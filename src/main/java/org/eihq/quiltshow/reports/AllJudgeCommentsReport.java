@@ -5,18 +5,20 @@ import java.util.List;
 
 import org.eihq.quiltshow.model.Report;
 import org.eihq.quiltshow.model.ReportResult;
+import org.eihq.quiltshow.model.SearchField;
+import org.eihq.quiltshow.model.SearchField.MatchType;
 import org.eihq.quiltshow.repository.QuiltSearchBuilder;
 
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class HangingLabelsReport extends Report {
+public class AllJudgeCommentsReport extends Report {
 
-	public static final Long ID = -60l;
+	public static final Long ID = -70l;
 	
 	
-	public HangingLabelsReport() {
-		
+	public AllJudgeCommentsReport() {
+		setJudged(new SearchField("true", MatchType.EQUALS, null));
 	}
 
 
@@ -27,18 +29,18 @@ public class HangingLabelsReport extends Report {
 
 	@Override
 	public String getReportName() {
-		return "Hanging Tags";
+		return "All Judges Comments";
 	}
 
 
 	@Override
 	public ReportCategory getReportCategory() {
-		return ReportCategory.MISCELLANEOUS;
+		return ReportCategory.AWARDS;
 	}
 	
 	@Override
 	public String getFormat() {
-		return "description-card";
+		return "judge-remarks";
 	}
 	
 	@Override
@@ -48,7 +50,7 @@ public class HangingLabelsReport extends Report {
 
 	@Override
 	public String getReportDescription() {
-		return "Half page hanging tags";
+		return "All Judges Comments";
 	}
 
 
@@ -59,12 +61,12 @@ public class HangingLabelsReport extends Report {
 
 	@Override
 	public List<String> getSortOrder() {
-		return Arrays.asList("judged", "enteredBy", "name");
+		return Arrays.asList("category", "number");
 	}
 	
 	
 	public ReportResult run(QuiltSearchBuilder quiltSearchBuilder) {
-		log.debug("Starting Check In/Out Report...");
+		log.debug("Starting Judges Comments Report...");
 		
 		ReportResult result = new ReportResult(this, quiltSearchBuilder.executeQueryReport(this));		
 		return result;

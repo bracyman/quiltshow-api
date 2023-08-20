@@ -1,6 +1,7 @@
 package org.eihq.quiltshow.repository;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.eihq.quiltshow.model.Category;
 import org.eihq.quiltshow.model.Quilt;
@@ -19,6 +20,8 @@ public interface QuiltRepository extends JpaRepository<Quilt, Long>, JpaSpecific
 
 	@Query("from Quilt q left join fetch q.tags t where t = ?1")
 	List<Quilt> findQuiltsWithTag(Tag tag);
+
+	Optional<Quilt> findByNumber(Integer number);
 	
 	
     @Modifying

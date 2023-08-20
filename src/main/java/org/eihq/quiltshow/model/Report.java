@@ -11,9 +11,6 @@ import javax.persistence.Table;
 
 import org.eihq.quiltshow.repository.StringListConverter;
 
-import com.fasterxml.jackson.annotation.JsonIdentityInfo;
-import com.fasterxml.jackson.annotation.ObjectIdGenerators;
-
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -83,6 +80,10 @@ public class Report {
 	private SearchField groupSize = null;
 
 	private SearchField additionalQuilters = null;
+
+	private SearchField judgeComment = null;
+	
+	private SearchField awards = null;
 
     @Convert(converter = StringListConverter.class)
 	private List<String> fields = new LinkedList<>();	

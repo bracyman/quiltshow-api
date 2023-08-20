@@ -2,8 +2,10 @@ package org.eihq.quiltshow.service;
 
 import java.util.Arrays;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import org.eihq.quiltshow.exception.CannotDeleteInUseException;
 import org.eihq.quiltshow.exception.NoActiveShowException;
@@ -308,10 +310,21 @@ public class ShowService {
 	 */
 	public Award createAward(Show show, Award newAward) throws NoActiveShowException {
 		newAward.setShow(show);
-		show.getAwards().add(newAward);
+		
+		if(newAward.getCategory() != null) {
+			Category category = show.getCategories().stream()
+					.filter(c -> c.getId().equals(newAward.getCategory().getId()))
+					.findFirst()
+					.orElseThrow(() -> new NotFoundException(String.format("Unable to find category %d", newAward.getCategory().getId())));
+			newAward.setCategory(category);			
+		}
+		
+		Award savedAward = awardRepository.save(newAward);
+		savedAward.setShow(show);
+		show.getAwards().add(savedAward);
 		showRepository.save(show);
 		
-		return newAward;
+		return savedAward;
 	}	
 	
 	public Award updateAward(Award updatedAward) {
@@ -336,15 +349,51 @@ public class ShowService {
 		}
 	}
 
-	public void assignAward(Long awardId, Long quiltId) {
+	public void assignAward(Long awardId, List<Long> quiltIds) {
 		Award award = getAward(awardId);
-		Quilt quilt = quiltRepository.findById(quiltId).orElseThrow(() -> new NotFoundException("Quilt", quiltId));
+		Set<Quilt> quilts = new HashSet<>();
 		
-		award.getAwardedTo().add(quilt);
-		quilt.getAwards().add(award);
+		for(Long quiltId : quiltIds) {
+			quilts.add(quiltRepository.findById(quiltId).orElseThrow(() -> new NotFoundException("Quilt", quiltId)));
+		}
 		
+		award.setAwardedTo(quilts);
 		awardRepository.save(award);
-		quiltRepository.save(quilt);
+
+		for(Quilt q : quilts) {
+			q.getAwards().add(award);
+			quiltRepository.save(q);
+		}
+	}
+
+	public void assignAwardByQuiltNumber(Long awardId, List<Integer> quiltNumbers) {
+		Award award = getAward(awardId);
+		Set<Quilt> quilts = new HashSet<>();
+		Set<Quilt> quiltsToUpdate = new HashSet<>();
+		
+		if(award.getAwardedTo() != null) {
+			award.getAwardedTo().forEach(q -> {
+				quiltsToUpdate.add(q);
+				q.getAwards().remove(award);
+			});
+		}
+		
+		for(Integer number : quiltNumbers) {
+			Quilt q = quiltRepository.findByNumber(number).orElseThrow(() -> new NotFoundException("Quilt", number));
+			quilts.add(q);
+			quiltsToUpdate.add(q);
+		}
+		
+		award.setAwardedTo(quilts);
+		awardRepository.save(award);
+
+		for(Quilt q : quilts) {
+			q.getAwards().add(award);
+		}
+
+		for(Quilt q : quiltsToUpdate) {
+			quiltRepository.save(q);
+		}
 	}
 	
 	public void unassignAward(Long awardId, Long quiltId) {

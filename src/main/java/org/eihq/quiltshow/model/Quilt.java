@@ -120,6 +120,10 @@ public class Quilt {
     @EqualsAndHashCode.Exclude
 	@ToString.Exclude
     PaymentData paymentData;
+    
+    @OneToOne
+    @JoinColumn(name = "judge_comment_id", referencedColumnName = "id")
+    JudgeComment judgeComment;
 
     
 
