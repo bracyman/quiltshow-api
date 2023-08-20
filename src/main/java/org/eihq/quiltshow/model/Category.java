@@ -14,7 +14,9 @@ import javax.persistence.Table;
 
 import org.springframework.util.StringUtils;
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -25,6 +27,7 @@ import lombok.ToString;
 @Table(name = "categories")
 @Data
 @NoArgsConstructor
+@EqualsAndHashCode
 public class Category {
 
 	@Id
@@ -53,8 +56,20 @@ public class Category {
 	@ToString.Exclude
 	Set<Quilt> quilts = new HashSet<>();
 	
+	@JsonIgnore
+	@OneToMany(cascade = CascadeType.ALL, orphanRemoval = false, mappedBy = "category")
+	@EqualsAndHashCode.Exclude
+	@ToString.Exclude
+	Set<Award> awards = new HashSet<>();
+	
 	private Boolean judgeable = Boolean.TRUE;
 	
+
+
+	public Category(Long id) {
+		this.id = id;
+	}
+
 	
 	public String getShortDescription() {
 		if(!StringUtils.hasText(this.shortDescription)) {
@@ -63,4 +78,5 @@ public class Category {
 		
 		return this.shortDescription;
 	}
+
 }

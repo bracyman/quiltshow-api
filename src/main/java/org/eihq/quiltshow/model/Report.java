@@ -12,12 +12,14 @@ import javax.persistence.Table;
 import org.eihq.quiltshow.repository.StringListConverter;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "reports")
 @Data
 @NoArgsConstructor
+@EqualsAndHashCode
 public class Report {
 	
 	public static enum ReportCategory {
@@ -78,6 +80,10 @@ public class Report {
 	private SearchField groupSize = null;
 
 	private SearchField additionalQuilters = null;
+
+	private SearchField judgeComment = null;
+	
+	private SearchField awards = null;
 
     @Convert(converter = StringListConverter.class)
 	private List<String> fields = new LinkedList<>();	

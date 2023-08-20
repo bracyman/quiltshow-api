@@ -15,6 +15,9 @@ import javax.persistence.Table;
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
+
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -22,6 +25,7 @@ import lombok.ToString;
 @Entity
 @Table(name = "shows")
 @Data
+@EqualsAndHashCode
 public class Show {
 
 	@Id

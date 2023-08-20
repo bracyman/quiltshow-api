@@ -1,5 +1,7 @@
 package org.eihq.quiltshow.controller;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.HashSet;
 import java.util.List;
@@ -7,6 +9,8 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import javax.persistence.ManyToOne;
 
 import org.eihq.quiltshow.configuration.UserRoles;
 import org.eihq.quiltshow.controller.models.ShowSummary;
@@ -37,6 +41,10 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 
 @CrossOrigin(origins="*")
 @RestController
@@ -328,6 +336,70 @@ public class ShowController implements InitializingBean {
 		return showService.getShow(longId).getAwards();
 	}
 
+	/**
+	 * Returns all the awards for the specified category
+	 * @param showId
+	 * @param categoryId
+	 * @return
+	 * @throws NoSuchShowException
+	 */
+	@GetMapping("/{showId}/awards/category/{categoryId}")
+	public List<Award> getAwards(@PathVariable("showId")String showId, @PathVariable("categoryId")String categoryId) {
+		Long longShowId = Long.parseLong(showId);
+
+		if((categoryId == null) || (categoryId.equalsIgnoreCase("special"))) {
+			return showService.getShow(longShowId).getAwards().stream()
+					.filter(a -> a.getCategory() == null)
+					.collect(Collectors.toList());
+		}
+		else {
+			Long longCategoryId = Long.parseLong(categoryId);
+			return showService.getShow(longShowId).getAwards().stream()
+				.filter(a -> (a.getCategory() != null) && a.getCategory().getId().equals(longCategoryId))
+				.collect(Collectors.toList());
+		}
+	}
+
+	/**
+	 * Returns all the awards and their assigned quilts for the specified category
+	 * @param showId
+	 * @param categoryId
+	 * @return
+	 * @throws NoSuchShowException
+	 */
+	@GetMapping("/{showId}/awards/{awardId}/assignments")
+	public List<AwardAssignments> getAwardAssignments(@PathVariable("showId")String showId, @PathVariable("awardId")Long awardId) {
+		Long longShowId = Long.parseLong(showId);
+
+		return Arrays.asList(new AwardAssignments(showService.getAward(awardId)));
+	}
+
+	/**
+	 * Returns all the awards and their assigned quilts for the specified category
+	 * @param showId
+	 * @param categoryId
+	 * @return
+	 * @throws NoSuchShowException
+	 */
+	@GetMapping("/{showId}/awards/category/{categoryId}/assignments")
+	public List<AwardAssignments> getAwardAssignmentsByCategory(@PathVariable("showId")String showId, @PathVariable("categoryId")String categoryId) {
+		Long longShowId = Long.parseLong(showId);
+
+		if((categoryId == null) || (categoryId.equalsIgnoreCase("special"))) {
+			return showService.getShow(longShowId).getAwards().stream()
+					.filter(a -> a.getCategory() == null)
+					.map(a -> new AwardAssignments(a))
+					.collect(Collectors.toList());
+		}
+		else {
+			Long longCategoryId = Long.parseLong(categoryId);
+			return showService.getShow(longShowId).getAwards().stream()
+				.filter(a -> (a.getCategory() != null) && a.getCategory().getId().equals(longCategoryId))
+				.map(a -> new AwardAssignments(a))
+				.collect(Collectors.toList());
+		}
+	}
+
 	@PostMapping("/{showId}/awards")
 	public ResponseEntity<Award> createAward(@PathVariable("showId")String showId, @RequestBody Award newAward) throws NoActiveShowException {
 		Long longId = Long.parseLong(showId);
@@ -336,7 +408,21 @@ public class ShowController implements InitializingBean {
 		return ResponseEntity.ok(created);
 	}
 
-	@PostMapping("/awards/{awardId}")
+
+	@PostMapping("/{showId}/awards/multi")
+	public ResponseEntity<List<Award>> createAwards(@PathVariable("showId")String showId, @RequestBody List<Award> newAwards) throws NoActiveShowException {
+		Long longId = Long.parseLong(showId);
+		List<Award> createdAwards = new ArrayList<>();
+		if(newAwards != null) {
+			for(Award a : newAwards) {
+				createdAwards.add(showService.createAward(longId, a));
+			}
+		}
+
+		return ResponseEntity.ok(createdAwards);
+	}
+
+	@PostMapping("/{showId}/awards/{awardId}")
 	public ResponseEntity<Award> updateAward(@PathVariable("showId")String showId, @PathVariable("awardId") Long awardId, @RequestBody Award award) {
 		Long longId = Long.parseLong(showId);
 
@@ -344,12 +430,21 @@ public class ShowController implements InitializingBean {
 		return ResponseEntity.ok(updated);
 	}
 
-	@PostMapping("/awards/{awardId}/award/{quiltId}")
-	public void assignAward(@PathVariable("awardId") Long awardId, @PathVariable("quiltId") Long quiltId) {
-		showService.assignAward(awardId, quiltId);
+	@PostMapping("/{showId}/awards/{awardId}/assign/id")
+	public void assignAwardByQuiltId(@PathVariable("awardId") Long awardId, @RequestBody List<Long> quiltIds) {
+		if(quiltIds != null) {
+			showService.assignAward(awardId, quiltIds);
+		}
 	}
 
-	@DeleteMapping("/awards/{awardId}/award/{quiltId}")
+	@PostMapping("/{showId}/awards/{awardId}/assign/number")
+	public void assignAwardByQuiltNumber(@PathVariable("awardId") Long awardId, @RequestBody List<Integer> quiltNumbers) {
+		if(quiltNumbers != null) {
+			showService.assignAwardByQuiltNumber(awardId, quiltNumbers);
+		}
+	}
+
+	@DeleteMapping("/{showId}/awards/{awardId}/award/{quiltId}")
 	public void unassignAward(@PathVariable("awardId") Long awardId, @PathVariable("quiltId") Long quiltId) {
 		showService.unassignAward(awardId, quiltId);
 	}
@@ -613,5 +708,39 @@ public class ShowController implements InitializingBean {
 			}
 		}
 	}	
+
+}
+
+@Data
+class AwardAssignments {
+	private Long id;
+
+	private String name;
+	
+	private String color;
+	
+	private String description;
+	
+	private Integer displayOrder;
+	
+	private Boolean multipleRecipients = Boolean.FALSE;
+	
+	@EqualsAndHashCode.Exclude
+	@ToString.Exclude
+	private Set<Quilt> awardedTo;
+	
+	
+	public AwardAssignments(Award award) {
+		setId(award.getId());
+		setName(award.getName());
+		setColor(award.getColor());
+		setDescription(award.getDescription());
+		setDisplayOrder(award.getDisplayOrder());
+		setMultipleRecipients(award.getMultipleRecipients());
+		setAwardedTo(award.getAwardedTo());
+	}
+	
+	@ManyToOne
+	private Category category;
 
 }

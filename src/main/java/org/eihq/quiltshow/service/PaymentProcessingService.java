@@ -9,6 +9,7 @@ import org.eihq.quiltshow.model.PaymentData.Status;
 import com.squareup.square.exceptions.ApiException;
 
 public interface PaymentProcessingService {
+	
 
 	/**
 	 * Returns the name of the payment processor

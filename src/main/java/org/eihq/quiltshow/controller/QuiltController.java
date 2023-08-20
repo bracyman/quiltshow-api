@@ -2,15 +2,20 @@ package org.eihq.quiltshow.controller;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Calendar;
 import java.util.Collections;
-import java.util.LinkedList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.eihq.quiltshow.configuration.UserRoles;
+import org.eihq.quiltshow.exception.NotFoundException;
 import org.eihq.quiltshow.exception.PaymentException;
+import org.eihq.quiltshow.model.JudgeComment;
 import org.eihq.quiltshow.model.PaymentData;
 import org.eihq.quiltshow.model.Person;
 import org.eihq.quiltshow.model.Quilt;
+import org.eihq.quiltshow.repository.JudgeCommentRepository;
 import org.eihq.quiltshow.repository.QuiltRepository;
 import org.eihq.quiltshow.repository.QuiltSearchBuilder;
 import org.eihq.quiltshow.service.PaymentService;
@@ -18,6 +23,7 @@ import org.eihq.quiltshow.service.PersonService;
 import org.eihq.quiltshow.service.UserAuthentication;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -45,6 +51,9 @@ public class QuiltController implements InitializingBean {
 
 	@Autowired
 	private QuiltRepository quiltRepository;
+	
+	@Autowired
+	private JudgeCommentRepository judgeCommentRepository;
 
 	@Autowired
 	private PersonService personService;
@@ -67,7 +76,7 @@ public class QuiltController implements InitializingBean {
 		boolean onlyPersonal = (personal != null) && "true".equalsIgnoreCase(personal);
 		
 		if(!onlyPersonal && userAuthentication.hasRole(UserRoles.ROLE_ADMIN)) {
-			return quiltRepository.findAll();
+			return getAllQuilts(auth);
 		}
 		
 		Person user = personService.getUser(email);
@@ -81,7 +90,20 @@ public class QuiltController implements InitializingBean {
 
 	@GetMapping("/all")
 	public List<Quilt> getAllQuilts(Authentication auth) {
-		return quiltRepository.findAll();
+		if(userAuthentication.hasRole(UserRoles.ROLE_ADMIN)) {
+			List<Quilt> allQuilts = quiltRepository.findAll();
+			Set<PaymentData> payments = new HashSet<>();
+			allQuilts.forEach(q -> {
+				if((q.getPaymentData() != null) && paymentService.paymentInProgress(q.getPaymentData())) {
+					payments.add(q.getPaymentData());
+				}
+			});
+			
+			paymentService.updateStatus(payments);
+			return allQuilts;
+		}
+		
+		return Collections.emptyList();
 	}	
 
 	@PostMapping("/search/{searchText}")
@@ -103,6 +125,11 @@ public class QuiltController implements InitializingBean {
 	@GetMapping("/{id}")
 	public Quilt getQuilt(@PathVariable Long id) {
 		return quiltRepository.findById(id).get();
+	}
+
+	@GetMapping("/number/{number}")
+	public Quilt getQuilt(@PathVariable Integer number) {
+		return quiltRepository.findByNumber(number).get();
 	}
 
 	@PostMapping("/user/{userId}")
@@ -139,9 +166,6 @@ public class QuiltController implements InitializingBean {
 		if(currentQuilt == null) {
 			return ResponseEntity.notFound().build();
 		}
-		
-		Person user = personService.getUser(auth.getName());
-		//resolveHangingPreference(user, quilt, currentQuilt.getHangingPreference());
 		
 		Quilt updatedQuilt = quiltRepository.save(quilt);
 		return ResponseEntity.ok(updatedQuilt);
@@ -185,6 +209,52 @@ public class QuiltController implements InitializingBean {
 			log.error("Error fetching amount due for " + user.getEmail(), e);
 			return ResponseEntity.internalServerError().body("Error encountered creating order: " + e.getMessage());
 		}		
+	}
+	
+	@GetMapping("/{id}/judges-comment/{commentId}")
+	public ResponseEntity<JudgeComment> setJudgesComments(Authentication auth, @PathVariable Long id, @PathVariable Long commentId) {
+		if(!userAuthentication.hasRole(UserRoles.ROLE_ADMIN)) {
+			return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
+		}
+
+		JudgeComment judgeComment = judgeCommentRepository.findById(commentId).orElseThrow(() -> new NotFoundException(String.format("Unable to find judge comments %d", commentId)));
+		
+		return ResponseEntity.ok(judgeComment);
+	}
+	
+	@PostMapping("/{id}/judges-comment")
+	public ResponseEntity<JudgeComment> setJudgesComments(Authentication auth, @PathVariable Long id, @RequestBody JudgeComment judgeComment) {
+		if(!userAuthentication.hasRole(UserRoles.ROLE_ADMIN)) {
+			return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
+		}
+
+		Quilt quilt = quiltRepository.findById(id).orElseThrow(() -> new NotFoundException(String.format("Unable to find quilt %d", id)));
+		judgeComment.setQuilt(quilt);
+		
+		if(judgeComment.getId() == null) {
+			judgeComment.setCreatedDate(Calendar.getInstance().getTime());
+			judgeComment.setUpdatedDate(judgeComment.getUpdatedDate());
+			judgeCommentRepository.save(judgeComment);
+			quilt.setJudgeComment(judgeComment);
+			quiltRepository.save(quilt);
+		}
+		else {
+			judgeComment.updated();
+			judgeCommentRepository.save(judgeComment);
+		}
+		
+		return ResponseEntity.ok(judgeComment);
+	}
+	
+	@PostMapping("/external-pay")
+	public ResponseEntity<String> noteExternalQuiltPayment(Authentication auth, @RequestBody List<Long> quiltIds) {
+		if(!userAuthentication.hasRole(UserRoles.ROLE_ADMIN)) {
+			return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Insufficient permission");
+		}
+
+		paymentService.createExternalPaymentNote(quiltIds, auth.getName());
+		
+		return ResponseEntity.ok("External payment stored");
 	}
 
 	

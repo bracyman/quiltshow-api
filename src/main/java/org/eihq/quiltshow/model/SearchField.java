@@ -121,7 +121,7 @@ public class SearchField implements Serializable {
 		if(getMatches() == null) {
 			return null;
 		}
-		return Stream.of(getMatches().split(",")).map(m -> Integer.valueOf(m)).collect(Collectors.toList());
+		return Stream.of(getMatches().split(",")).map(m -> Integer.valueOf(m.trim())).collect(Collectors.toList());
 	}	
 	
 	@JsonIgnore

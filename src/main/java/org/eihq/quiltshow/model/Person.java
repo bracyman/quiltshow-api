@@ -17,13 +17,17 @@ import javax.persistence.Table;
 import org.eihq.quiltshow.configuration.UserRoles;
 import org.eihq.quiltshow.repository.UserRoleListConverter;
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 @Entity
 @Table(name = "people")
 @Data
+@EqualsAndHashCode
 public class Person {
 
 	@Id

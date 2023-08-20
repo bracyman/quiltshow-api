@@ -12,11 +12,19 @@ import org.eihq.quiltshow.model.Quilt;
 import org.eihq.quiltshow.model.Report;
 import org.eihq.quiltshow.model.Report.ReportCategory;
 import org.eihq.quiltshow.model.ReportResult;
+import org.eihq.quiltshow.reports.AllJudgeCommentsReport;
+import org.eihq.quiltshow.reports.BlankJudgeCommentsReport;
+import org.eihq.quiltshow.reports.AllAwardsReport;
+import org.eihq.quiltshow.reports.CheckInOutReport;
+import org.eihq.quiltshow.reports.HangingLabelsReport;
 import org.eihq.quiltshow.reports.PaymentStatusReport;
+import org.eihq.quiltshow.reports.QuiltIdSlipReport;
+import org.eihq.quiltshow.reports.StatisticsStatusReport;
 import org.eihq.quiltshow.repository.PersonRepository;
 import org.eihq.quiltshow.repository.QuiltRepository;
 import org.eihq.quiltshow.repository.QuiltSearchBuilder;
 import org.eihq.quiltshow.repository.ReportRepository;
+import org.eihq.quiltshow.repository.ShowRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -25,12 +33,15 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @Slf4j
 public class ReportService {
-
+	
 	@Autowired
 	ReportRepository reportRepository;
 
 	@Autowired
 	PaymentService paymentService;
+
+	@Autowired
+	ShowRepository showRepository;
 
 	@Autowired
 	QuiltRepository quiltRepository;
@@ -40,8 +51,53 @@ public class ReportService {
 
 	@Autowired
 	QuiltSearchBuilder quiltSearchBuilder;
-
 	
+
+	public List<Object> executeQuery(String query) {
+		return quiltSearchBuilder.executeQuery(query);
+	}
+
+	public ReportResult executeQueryReport(Report report) {
+		return new ReportResult(report, quiltSearchBuilder.executeQueryReport(report));
+	}
+
+	public ReportResult executeQueryReport(Long reportId) {
+		Report report = getReport(reportId);
+
+		if(report.getId().equals(PaymentStatusReport.ID)) {
+			return ((PaymentStatusReport)report).run(paymentService, personRepository);
+		}
+
+		if(report.getId().equals(StatisticsStatusReport.ID)) {
+			return new StatisticsStatusReport().run(quiltRepository, showRepository);
+		}
+
+		if(report.getId().equals(CheckInOutReport.ID)) {
+			return new CheckInOutReport().run(quiltSearchBuilder);
+		}
+
+		if(report.getId().equals(QuiltIdSlipReport.ID)) {
+			return new QuiltIdSlipReport().run(quiltSearchBuilder);
+		}
+		
+		if(report.getId().equals(HangingLabelsReport.ID)) {
+			return new HangingLabelsReport().run(quiltSearchBuilder);
+		}
+
+		if(report.getId().equals(AllJudgeCommentsReport.ID)) {
+			return new AllJudgeCommentsReport().run(quiltSearchBuilder);
+		}
+		
+		if(report.getId().equals(BlankJudgeCommentsReport.ID)) {
+			return new BlankJudgeCommentsReport().run(quiltSearchBuilder);
+		}
+		
+		if(report.getId().equals(AllAwardsReport.ID)) {
+			return new AllAwardsReport().run(quiltSearchBuilder);
+		}
+		
+		return new ReportResult(report, quiltSearchBuilder.executeQueryReport(report));
+	}
 
 	public List<ReportCategory> getReportCategories() {
 		return Arrays.asList(ReportCategory.values());
@@ -53,7 +109,16 @@ public class ReportService {
 	 * @return
 	 */
 	public List<Report> getReports() {
-		return reportRepository.findAll();
+		List<Report> reports = new LinkedList<>(reportRepository.findAll());
+		reports.add(PaymentStatusReport.instance());
+		reports.add(new StatisticsStatusReport());
+		reports.add(new CheckInOutReport());
+		reports.add(new QuiltIdSlipReport());
+		reports.add(new HangingLabelsReport());
+		reports.add(new AllJudgeCommentsReport());
+		reports.add(new BlankJudgeCommentsReport());
+		reports.add(new AllAwardsReport());
+		return reports;
 	}
 
 
@@ -68,7 +133,35 @@ public class ReportService {
 		}
 
 		if(id.equals(PaymentStatusReport.ID)) {
-			return new PaymentStatusReport();
+			return PaymentStatusReport.instance();
+		}
+
+		if(id.equals(StatisticsStatusReport.ID)) {
+			return new StatisticsStatusReport();
+		}
+
+		if(id.equals(CheckInOutReport.ID)) {
+			return new CheckInOutReport();
+		}
+		
+		if(id.equals(QuiltIdSlipReport.ID)) {
+			return new QuiltIdSlipReport();
+		}
+
+		if(id.equals(HangingLabelsReport.ID)) {
+			return new HangingLabelsReport();
+		}
+		
+		if(id.equals(AllJudgeCommentsReport.ID)) {
+			return new AllJudgeCommentsReport();
+		}
+
+		if(id.equals(BlankJudgeCommentsReport.ID)) {
+			return new BlankJudgeCommentsReport();
+		}
+		
+		if(id.equals(AllAwardsReport.ID)) {
+			return new AllAwardsReport();
 		}
 
 		return reportRepository.findById(id).orElseThrow(() -> new NotFoundException("Report", id));
@@ -123,6 +216,34 @@ public class ReportService {
 			return ((PaymentStatusReport)report).run(paymentService, personRepository);
 		}
 
+		if(report.getId().equals(StatisticsStatusReport.ID)) {
+			return new StatisticsStatusReport().run(quiltRepository, showRepository);
+		}
+
+		if(report.getId().equals(CheckInOutReport.ID)) {
+			return new CheckInOutReport().run(quiltSearchBuilder);
+		}
+
+		if(report.getId().equals(QuiltIdSlipReport.ID)) {
+			return new QuiltIdSlipReport().run(quiltSearchBuilder);
+		}
+		
+		if(report.getId().equals(HangingLabelsReport.ID)) {
+			return new HangingLabelsReport().run(quiltSearchBuilder);
+		}
+
+		if(report.getId().equals(AllJudgeCommentsReport.ID)) {
+			return new AllJudgeCommentsReport().run(quiltSearchBuilder);
+		}
+		
+		if(report.getId().equals(BlankJudgeCommentsReport.ID)) {
+			return new BlankJudgeCommentsReport().run(quiltSearchBuilder);
+		}
+
+		if(report.getId().equals(AllAwardsReport.ID)) {
+			return new AllAwardsReport().run(quiltSearchBuilder);
+		}
+
 		return runReport(report);
 	}
 
@@ -154,9 +275,15 @@ public class ReportService {
 				Map<String, Object> searchResult = new HashMap<>();
 				report.getFields().forEach(f -> {
 					try {
-						Field field = Quilt.class.getDeclaredField(f);
-						field.setAccessible(true);
-						searchResult.put(f, field.get(q));
+						if(f.equalsIgnoreCase("perimeter")) {
+							searchResult.put("width", q.getWidth());
+							searchResult.put("length", q.getLength());
+						}
+						else {
+							Field field = Quilt.class.getDeclaredField(f);
+							field.setAccessible(true);
+							searchResult.put(f, field.get(q));
+						}
 					} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
 						searchResult.put(f, null);
 					}

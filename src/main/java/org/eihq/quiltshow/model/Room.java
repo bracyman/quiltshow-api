@@ -1,17 +1,15 @@
 package org.eihq.quiltshow.model;
 
-import java.util.Map;
+import java.util.List;
 
-import javax.persistence.Convert;
+import javax.persistence.CascadeType;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.ManyToOne;
-import javax.persistence.OneToOne;
+import javax.persistence.OneToMany;
 import javax.persistence.Table;
-import javax.persistence.Transient;
-
-import org.eihq.quiltshow.repository.MeasurementMapConverter;
 
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
@@ -23,36 +21,32 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @Entity
-@Table(name = "hanging_locations")
+@Table(name = "rooms")
 @EqualsAndHashCode
 @JsonIdentityInfo(
 		  generator = ObjectIdGenerators.PropertyGenerator.class, 
 		  property = "id")
-public class HangingLocation {
+public class Room {
 	
 	@Id
     @GeneratedValue
     Long id;
 
-	@Convert(converter = MeasurementMapConverter.class)
-	Map<String, Double> location;
+	String name;
 	
 	@ManyToOne
 	@EqualsAndHashCode.Exclude
-	Wall wall;
+	Show show;
 	
-	@OneToOne
+	Boolean active = Boolean.FALSE;
+	
+	Double width;
+	
+	Double length;
+	
+	Double maxHeight;
+	
+	@OneToMany(mappedBy = "room", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
 	@EqualsAndHashCode.Exclude
-	Quilt quilt;
-	
-	@Transient
-	public Double getHeight() {
-		return (getQuilt() == null) ? 0.0 : getQuilt().getLength();
-	}
-	
-	@Transient
-	public Double getWidth() {
-		return (getQuilt() == null) ? 0.0 : getQuilt().getWidth();
-	}
-	
+	List<HangingUnit> hangingUnits;
 }

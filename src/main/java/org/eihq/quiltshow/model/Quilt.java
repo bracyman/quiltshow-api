@@ -24,8 +24,10 @@ import javax.persistence.Table;
 
 import org.hibernate.annotations.GenericGenerator;
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIncludeProperties;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -36,6 +38,7 @@ import lombok.ToString;
 @Table(name = "quilts")
 @Data
 @NoArgsConstructor
+@EqualsAndHashCode
 public class Quilt {
  
 	@Id
@@ -118,11 +121,10 @@ public class Quilt {
 	@ToString.Exclude
     PaymentData paymentData;
     
-    @ManyToOne
-    @EqualsAndHashCode.Exclude
-	@ToString.Exclude
-    HangingLocation hangingLocation;
-    
+    @OneToOne
+    @JoinColumn(name = "judge_comment_id", referencedColumnName = "id")
+    JudgeComment judgeComment;
+
     
 
     /**
